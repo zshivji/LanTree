@@ -1,0 +1,11 @@
+# Things to hide
+.venv/
+__pycache__/
+.DS_Store
+
+# website secrets and data
+website/.env
+website/local_uploads/
+website/frontend/test-results/
+website/frontend/blob-report/
+

@@ -1,0 +1,298 @@
+"""
+Tests for runner-facing endpoints.
+Run: pytest tests/api/test_runner.py -v
+"""
+import base64
+from unittest.mock import patch
+
+from fastapi.testclient import TestClient
+from sqlmodel import select
+
+from app.core.config import settings
+from app.crud import update_job
+from app.models import JobStatus, UserDatabaseRecord
+
+# ── Step 4: runner auth ───────────────────────────────────────────────────────
+
+def test_runner_poll_rejects_missing_token(client: TestClient):
+    r = client.get("/api/v1/runner/jobs")
+    assert r.status_code == 422   # missing required header
+
+
+def test_runner_poll_rejects_wrong_token(client: TestClient):
+    r = client.get("/api/v1/runner/jobs", headers={"x-runner-token": "wrong"})
+    assert r.status_code == 401
+
+
+# ── Step 5: polling ───────────────────────────────────────────────────────────
+
+def test_runner_poll_empty_when_no_ready_jobs(client, runner_headers):
+    r = client.get("/api/v1/runner/jobs", headers=runner_headers)
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_runner_poll_returns_ready_jobs(client, runner_headers, job, db):
+    """A job in 'ready' state should appear in the poll response."""
+    update_job(
+        session=db,
+        job=job,
+        status=JobStatus.ready,
+        use_prodigal=True,
+    )
+
+    r = client.get("/api/v1/runner/jobs", headers=runner_headers)
+
+    assert r.status_code == 200
+    jobs = r.json()
+    assert len(jobs) == 1
+    assert jobs[0]["id"] == str(job.id)
+    assert "hpc_path" in jobs[0]
+    assert jobs[0]["use_prodigal"] is True
+    assert jobs[0]["include_in_database"] is False
+
+
+def test_runner_poll_returns_legacy_transferring_jobs(client, runner_headers, job, db):
+    """Jobs from the pre-pull runner transition must still be claimable."""
+    update_job(session=db, job=job, status=JobStatus.transferring)
+
+    r = client.get("/api/v1/runner/jobs", headers=runner_headers)
+
+    assert r.status_code == 200
+    assert len(r.json()) == 1
+    assert r.json()[0]["id"] == str(job.id)
+
+
+def test_runner_poll_marks_jobs_seen(client, runner_headers, job, db):
+    """After one poll, the same job must not appear in the next poll."""
+    update_job(session=db, job=job, status=JobStatus.ready)
+
+    r1 = client.get("/api/v1/runner/jobs", headers=runner_headers)
+    r2 = client.get("/api/v1/runner/jobs", headers=runner_headers)
+
+    assert len(r1.json()) == 1
+    assert len(r2.json()) == 0   # already seen
+
+
+# ── Step 6: status update ─────────────────────────────────────────────────────
+
+def test_runner_can_mark_processing(client, runner_headers, job, db):
+    update_job(session=db, job=job, status=JobStatus.ready, seen_by_runner=True)
+    r = client.patch(
+        f"/api/v1/runner/jobs/{job.id}",
+        json={"status": "processing"},
+        headers=runner_headers,
+    )
+    assert r.status_code == 200
+    assert r.json()["ok"] is True
+    assert r.json()["email_sent"] is False
+    assert r.json()["email_status"] == "not_applicable"
+
+
+def test_runner_can_mark_failed(client, runner_headers, job, db, monkeypatch):
+    monkeypatch.setattr("app.core.config.settings.SMTP_HOST", "smtp.test.com")
+    monkeypatch.setattr("app.core.config.settings.EMAILS_FROM_EMAIL", "noreply@lab.edu")
+    update_job(session=db, job=job, status=JobStatus.processing, seen_by_runner=True)
+    with patch("app.api.routes.runner.send_failure_email") as mock_email:
+        r = client.patch(
+            f"/api/v1/runner/jobs/{job.id}",
+            json={"status": "failed", "error_message": "tool crashed"},
+            headers=runner_headers,
+        )
+    assert r.status_code == 200
+    assert r.json()["email_sent"] is True
+    assert r.json()["email_status"] == "sent"
+    mock_email.assert_called_once()
+    assert mock_email.call_args.kwargs["error_message"] == "tool crashed"
+    db.refresh(job)
+    assert job.email_status == "sent"
+
+
+def test_runner_can_download_input(client, runner_headers, job, tmp_path, monkeypatch):
+    monkeypatch.setattr("app.core.config.settings.UPLOAD_DIR", str(tmp_path))
+    job_dir = tmp_path / str(job.id)
+    job_dir.mkdir(parents=True)
+    input_bytes = b">seq1\nMSTNPKPQR\n"
+    (job_dir / job.filename).write_bytes(input_bytes)
+
+    r = client.get(
+        f"/api/v1/runner/jobs/{job.id}/input",
+        headers=runner_headers,
+    )
+
+    assert r.status_code == 200
+    assert r.content == input_bytes
+
+
+# ── Step 7: result + email ────────────────────────────────────────────────────
+
+def test_runner_post_result_sends_email(client, runner_headers, job, db, monkeypatch, tmp_path):
+    monkeypatch.setattr("app.core.config.settings.UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr("app.core.config.settings.SMTP_HOST", "smtp.test.com")
+    monkeypatch.setattr("app.core.config.settings.EMAILS_FROM_EMAIL", "noreply@lab.edu")
+    monkeypatch.setattr("app.core.config.settings.FRONTEND_HOST", "http://localhost:5173")
+    monkeypatch.setattr("app.core.config.settings.BACKEND_PUBLIC_URL", "https://api.example.edu")
+    monkeypatch.setattr(settings, "JOB_NOTIFICATION_EMAIL", None)
+    update_job(session=db, job=job, status=JobStatus.processing, seen_by_runner=True)
+
+    csv_bytes = b"seq,score\nATCG,0.99\n"
+    payload = {
+        "filename": "nif_clusters.csv",
+        "content_type": "text/csv",
+        "data_base64": base64.b64encode(csv_bytes).decode(),
+    }
+
+    with patch("app.api.routes.runner.send_result_email") as mock_email:
+        r = client.post(
+            f"/api/v1/runner/jobs/{job.id}/result",
+            json=payload,
+            headers=runner_headers,
+        )
+
+    assert r.status_code == 200
+    assert r.json()["ok"] is True
+    assert r.json()["email_sent"] is True
+    assert r.json()["email_status"] == "sent"
+    db.refresh(job)
+    assert job.email_status == "sent"
+    mock_email.assert_called_once()
+    call_kwargs = mock_email.call_args.kwargs
+    assert call_kwargs["filename"] == "nif_clusters.csv"
+    assert call_kwargs["data"] == csv_bytes
+    assert call_kwargs["job_url"] == f"http://localhost:5173/classify?job={job.id}"
+    assert call_kwargs["attachments"] == [
+        ("nif_clusters.csv", "text/csv", csv_bytes),
+    ]
+    assert (tmp_path / str(job.id) / "results" / "nif_clusters.csv").read_bytes() == csv_bytes
+
+    records = db.exec(
+        select(UserDatabaseRecord).where(UserDatabaseRecord.job_id == job.id)
+    ).all()
+    assert records == []
+
+    download = client.get(f"/api/v1/classify/{job.id}/results/nif_clusters.csv")
+    assert download.status_code == 200
+    assert download.content == csv_bytes
+
+
+def test_runner_post_result_uses_public_job_email(client, runner_headers, job, db, monkeypatch, tmp_path):
+    monkeypatch.setattr("app.core.config.settings.UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr("app.core.config.settings.SMTP_HOST", "smtp.test.com")
+    monkeypatch.setattr("app.core.config.settings.EMAILS_FROM_EMAIL", "noreply@lab.edu")
+    monkeypatch.setattr(settings, "JOB_NOTIFICATION_EMAIL", None)
+    from app.models import Job
+
+    public_job = Job(
+        owner_id=job.owner_id,
+        filename="public.fasta",
+        file_size_bytes=12,
+        status=JobStatus.processing,
+        seen_by_runner=True,
+        user_email="submitter@example.edu",
+    )
+    db.add(public_job)
+    db.commit()
+    db.refresh(public_job)
+
+    payload = {
+        "filename": "report.html",
+        "content_type": "text/html",
+        "data_base64": base64.b64encode(b"<html>done</html>").decode(),
+    }
+
+    with patch("app.api.routes.runner.send_result_email") as mock_email:
+        r = client.post(
+            f"/api/v1/runner/jobs/{public_job.id}/result",
+            json=payload,
+            headers=runner_headers,
+        )
+
+    assert r.status_code == 200
+    assert mock_email.call_args.kwargs["to"] == "submitter@example.edu"
+
+
+def test_runner_post_opted_in_result_adds_user_database_records(
+    client, runner_headers, job, db, monkeypatch, tmp_path
+):
+    monkeypatch.setattr("app.core.config.settings.UPLOAD_DIR", str(tmp_path))
+    job.include_in_database = True
+    update_job(session=db, job=job, status=JobStatus.processing)
+
+    csv_bytes = (
+        b"GenomeID,Organism,cluster\n"
+        b"uploaded-genome,Uploaded organism,1\n"
+    )
+    payload = {
+        "filename": "nif_clusters.csv",
+        "content_type": "text/csv",
+        "data_base64": base64.b64encode(csv_bytes).decode(),
+    }
+
+    response = client.post(
+        f"/api/v1/runner/jobs/{job.id}/result",
+        json=payload,
+        headers=runner_headers,
+    )
+
+    assert response.status_code == 200
+    records = db.exec(
+        select(UserDatabaseRecord).where(UserDatabaseRecord.job_id == job.id)
+    ).all()
+    assert len(records) == 1
+    assert records[0].provenance == "USER_UPLOAD"
+    assert records[0].data["Organism"] == "Uploaded organism"
+
+    public_records = client.get("/api/v1/database/user-records")
+    assert public_records.status_code == 200
+    assert public_records.json() == [
+        {
+            "GenomeID": "uploaded-genome",
+            "Organism": "Uploaded organism",
+            "cluster": "1",
+            "Provenance": "USER_UPLOAD",
+        }
+    ]
+
+
+def test_runner_post_result_reports_email_failure(
+    client, runner_headers, job, db, monkeypatch, tmp_path
+):
+    monkeypatch.setattr("app.core.config.settings.UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr("app.core.config.settings.SMTP_HOST", "smtp.test.com")
+    monkeypatch.setattr(
+        "app.core.config.settings.EMAILS_FROM_EMAIL",
+        "noreply@lab.edu",
+    )
+    update_job(
+        session=db,
+        job=job,
+        status=JobStatus.processing,
+        seen_by_runner=True,
+    )
+
+    payload = {
+        "filename": "output.csv",
+        "content_type": "text/csv",
+        "data_base64": base64.b64encode(b"seq,score\nATCG,0.99\n").decode(),
+    }
+
+    with patch(
+        "app.api.routes.runner.send_result_email",
+        side_effect=OSError("SMTP unavailable"),
+    ):
+        r = client.post(
+            f"/api/v1/runner/jobs/{job.id}/result",
+            json=payload,
+            headers=runner_headers,
+        )
+
+    assert r.status_code == 200
+    assert r.json() == {
+        "ok": True,
+        "email_sent": False,
+        "email_status": "failed: OSError",
+    }
+    db.refresh(job)
+    assert job.status == JobStatus.complete
+    assert job.email_status == "failed: OSError"
+    assert (tmp_path / str(job.id) / "results" / "output.csv").exists()

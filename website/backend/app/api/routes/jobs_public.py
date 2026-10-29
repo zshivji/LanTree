@@ -1,0 +1,252 @@
+"""
+backend/app/api/routes/jobs_public.py
+
+Public endpoints for the classify page — no JWT auth required.
+Separate from /api/v1/jobs/ which requires a logged-in user.
+"""
+import logging
+import re
+import uuid
+from pathlib import Path
+
+import aiofiles
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import FileResponse
+from pydantic import EmailStr
+from sqlmodel import Field, Session, SQLModel, select
+
+from app.api.deps import get_db
+from app.core.config import settings
+from app.crud import get_job, update_job
+from app.models import Contributor, Job, JobStatus
+from app.services.email import send_submission_email
+from app.services.results import get_result_path, safe_result_filename
+
+log = logging.getLogger(__name__)
+router = APIRouter(prefix="/classify", tags=["classify"])
+
+
+def _job_url(job_id: uuid.UUID) -> str:
+    return f"{settings.FRONTEND_HOST.rstrip('/')}/classify?job={job_id}"
+
+
+def _notify_job_submitted(job: Job) -> None:
+    recipient = settings.JOB_NOTIFICATION_EMAIL
+    if not recipient or not settings.emails_enabled:
+        return
+    try:
+        send_submission_email(
+            to=recipient,
+            job_id=str(job.id),
+            submitter_email=str(job.user_email),
+            filename=job.filename,
+            file_size_bytes=job.file_size_bytes or 0,
+            job_url=_job_url(job.id),
+        )
+    except Exception:
+        log.exception("Failed to send submission notification for job %s", job.id)
+
+
+class PublicJobCreate(SQLModel):
+    user_email: EmailStr
+    filename: str
+    file_size_bytes: int
+    use_prodigal: bool = False
+    include_in_database: bool = False
+    orcid: str | None = Field(default=None, max_length=19)
+    sequences: str | None = None  # File content sent directly in JSON
+
+
+class PublicJobPublic(SQLModel):
+    id: uuid.UUID
+    filename: str
+    file_size_bytes: int | None
+    status: JobStatus
+    result_filename: str | None = None
+
+
+ORCID_PATTERN = re.compile(r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")
+
+
+def _validate_orcid(orcid: str | None) -> None:
+    if not orcid:
+        return
+    if not ORCID_PATTERN.fullmatch(orcid):
+        raise HTTPException(
+            status_code=422,
+            detail="ORCID must use the format 0000-0000-0000-0000",
+        )
+
+
+def _record_contributor(session: Session, orcid: str | None) -> None:
+    if not orcid or session.exec(
+        select(Contributor).where(Contributor.orcid == orcid)
+    ).first():
+        return
+    session.add(Contributor(orcid=orcid))
+
+
+@router.get("/contributors", response_model=list[str])
+def get_contributors(session: Session = Depends(get_db)) -> list[str]:
+    """Return the public ORCID identifiers contributed through DiazoDB."""
+    return sorted(
+        contributor.orcid
+        for contributor in session.exec(select(Contributor)).all()
+    )
+
+
+def _parse_content_range(content_range: str) -> tuple[int, int, int]:
+    try:
+        parts = content_range.replace("bytes ", "").split("/")
+        start, end = [int(x) for x in parts[0].split("-")]
+        total = int(parts[1])
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid Content-Range header")
+
+    return start, end, total
+
+
+@router.post("/", response_model=PublicJobPublic)
+async def create_public_job(
+    job_in: PublicJobCreate,
+    session: Session = Depends(get_db),
+) -> Job:
+    """
+    Public submission endpoint for the classify page.
+    No auth required — user identified by email only.
+    Creates a job record and upload directory.
+    If file content is provided in JSON, writes it and triggers transfer immediately.
+    """
+    inline_sequences = job_in.sequences
+    if inline_sequences is not None and not inline_sequences.strip():
+        raise HTTPException(status_code=400, detail="No sequences provided")
+    _validate_orcid(job_in.orcid)
+    _record_contributor(session, job_in.orcid)
+
+    # Use a sentinel UUID for public jobs (no real owner)
+    PUBLIC_OWNER_ID = uuid.UUID("00000000-0000-0000-0000-000000000000")
+
+    job = Job(
+        owner_id=PUBLIC_OWNER_ID,
+        filename=job_in.filename,
+        file_size_bytes=job_in.file_size_bytes,
+        status=JobStatus.ready if inline_sequences is not None else JobStatus.created,
+        user_email=job_in.user_email,
+        use_prodigal=job_in.use_prodigal,
+        include_in_database=job_in.include_in_database,
+        orcid=job_in.orcid,
+    )
+    session.add(job)
+    session.commit()
+    session.refresh(job)
+
+    # Create upload directory
+    job_dir = Path(settings.UPLOAD_DIR) / str(job.id)
+    job_dir.mkdir(parents=True, exist_ok=True)
+
+    # If file content is included in the create request, write it now.
+    # Otherwise the caller can upload chunks to PATCH /classify/{job_id}/upload.
+    if inline_sequences is not None:
+        file_path = job_dir / job_in.filename
+        file_path.write_text(inline_sequences, encoding="utf-8")
+        bytes_written = len(inline_sequences.encode("utf-8"))
+        log.info(f"[PUBLIC JOB] {job.id} Wrote {bytes_written} bytes to {file_path}")
+
+        update_job(
+            session=session,
+            job=job,
+            bytes_received=bytes_written,
+            status=JobStatus.ready,
+        )
+
+    _notify_job_submitted(job)
+    return job
+
+
+@router.get("/{job_id}", response_model=PublicJobPublic)
+def get_public_job_status(
+    job_id: uuid.UUID,
+    session: Session = Depends(get_db),
+) -> Job:
+    """
+    Public status polling endpoint.
+    Returns just enough info for the waiting page to know when to advance.
+    """
+    job = get_job(session=session, job_id=job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+@router.get("/{job_id}/results/{filename}")
+def download_public_job_result(
+    job_id: uuid.UUID,
+    filename: str,
+    session: Session = Depends(get_db),
+) -> FileResponse:
+    """
+    Download a completed result file by job ID.
+    Intended for links sent in completion emails.
+    """
+    job = get_job(session=session, job_id=job_id)
+    if not job or job.status != JobStatus.complete:
+        raise HTTPException(status_code=404, detail="Result not found")
+
+    try:
+        result_path = get_result_path(job_id, filename)
+        safe_name = safe_result_filename(filename)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid result filename")
+
+    if not result_path.exists() or not result_path.is_file():
+        raise HTTPException(status_code=404, detail="Result not found")
+
+    return FileResponse(
+        path=result_path,
+        filename=safe_name,
+        media_type="application/octet-stream",
+    )
+
+
+@router.patch("/{job_id}/upload", status_code=200)
+async def upload_public_file_chunk(
+    job_id: uuid.UUID,
+    request: Request,
+    session: Session = Depends(get_db),
+) -> dict:
+    """
+    Public file upload endpoint (no auth required).
+    Receives chunks with Content-Range header, writes to disk.
+    On completion, marks the job ready for the runner.
+    """
+    job = get_job(session=session, job_id=job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    content_range = request.headers.get("content-range", "")
+    log.info(f"[PUBLIC UPLOAD] {job_id} Content-Range: {content_range}")
+    start, end, total = _parse_content_range(content_range)
+
+    dest = Path(settings.UPLOAD_DIR) / str(job.id) / job.filename
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    async with aiofiles.open(dest, "r+b" if dest.exists() else "wb") as f:
+        await f.seek(start)
+        async for chunk in request.stream():
+            await f.write(chunk)
+
+    new_received = end + 1
+    is_complete = new_received >= total
+
+    log.info(f"[PUBLIC UPLOAD] {job_id} bytes_received={new_received}/{total}, complete={is_complete}")
+
+    update_job(
+        session=session,
+        job=job,
+        bytes_received=new_received,
+        status=JobStatus.ready if is_complete else JobStatus.uploading,
+        file_size_bytes=total,
+        seen_by_runner=False,
+    )
+
+    return {"bytes_received": new_received, "complete": is_complete}

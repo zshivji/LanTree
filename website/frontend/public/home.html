@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DiazoDB</title>
+  <link rel="icon" href="./assets/images/FeMoco-favicon.ico" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <style>
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #root {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      flex: 1;
+    }
+
+    /* Keep the tree behind the page heading. */
+    main.tree-page {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      padding-top: 0.75rem;
+      padding-bottom: 0.5rem;
+    }
+
+    main.tree-page .tree-header,
+    main.tree-page .page-description {
+      position: relative;
+      z-index: 2;
+      background: var(--bg-page);
+    }
+
+    main.tree-page .tree-header {
+      margin: 0;
+      padding: 0;
+    }
+
+    main.tree-page .tree-panel {
+      margin-top: -4.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    main.tree-page #tree-container {
+      position: relative;
+      z-index: 1;
+    }
+
+    main.tree-page #tree-container svg {
+      width: 95%;
+      height: auto;
+      position: relative;
+      z-index: 1;
+      display: block;
+    }
+
+    footer {
+      position: sticky;
+      bottom: 0;
+      z-index: 20;
+      background: rgba(225, 225, 225, 0.9);
+      border-top: 1px solid #ddd;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-89SKEBYC49"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-89SKEBYC49');
+</script>
+
+<body>
+  <div id="root">
+    <!--load page content first-->
+    <header>
+      <div class="header">
+        <a href="/" class="logo">DiazoDB <span class="logo-badge">Phylogeny</span></a>
+        <nav class="header__navigation">
+          <a translate="no" href="/database">DiazoDB</a>
+          <a translate="no" href="/classify">Upload</a>
+          <a translate="no" href="/about">About</a>
+          <!-- <a translate="no" href="/wiki">Nitrogenase Wiki</a> -->
+        </nav>
+      </div>
+    </header>
+
+  <hr class="header-separator">
+
+  <main class="tree-page">
+    <!-- <div style='position: absolute; bottom: 25px; right: 10px;'></div> -->
+    <div class="tree-header">
+      <h1>Nitrogenase Phylogeny</h1>
+      <div class="tree-search">
+        <div class="tree-search__field">
+          <label for="tree-search">Search:</label>
+          <input type="search" id="tree-search" placeholder="Search nodes…" />
+        </div>
+        <div class="tree-search__examples" aria-label="Example searches">
+          <span>Examples:</span>
+          <button type="button" data-search-example="Rhizobium">Rhizobium</button>
+          <button type="button" data-search-example="soil">soil</button>
+        </div>
+      </div>
+    </div>
+    <p class="page-description">Nitrogenase phylogeny built from 1000 representative nifH sequences.</p>
+    <div class="tree-panel">
+      <div id="tree-container"></div>
+      <aside class="tree-instructions" aria-label="Tree instructions">
+        <div class="tree-instructions__title">Instructions</div>
+        <p>
+          Mouse over tree labels to learn more about organisms encoding nitrogenase
+          and the genetic neighborhoods around their nif genes. Click on an organism to learn
+          more about its nitrogenase cluster. Use the search bar to find specific organisms
+          or environments. For viewing ease, each node represents multiple organisms. Check 
+          out all diazotrophs in the <a href="/database">DiazoDB</a> database.
+        </p>
+      </aside>
+    </div>
+
+    <div id="tooltip" class="tooltip"></div>
+
+    <script src="./js/tree.js" defer></script>
+
+  </main>
+
+  <footer>
+    <div>
+      <p><b>Citation: </b> DiazoDB: Interactive Nitrogenase Web Database, Shivji (2026) · <a href="https://doi.org/10.5281/zenodo.21909831">doi: 10.5281/zenodo.21909831</a> · Check out our <a href="https://github.com/zshivji/diazoDB-HPC" target="_blank" rel="noopener">GitHub!</a></p>
+    </div>
+  </footer>
+  
+  </div>
+</body>
+
+</html>
