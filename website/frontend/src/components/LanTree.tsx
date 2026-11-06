@@ -27,33 +27,45 @@ const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
     backgroundColor: theme.bg,
-    backgroundImage: "url('/images/header.png')",
-    backgroundPosition: "top center",
-    backgroundRepeat: "no-repeat",
-    backgroundSize: "cover",
     color: theme.text,
     display: "flex",
     flexDirection: "column",
     fontFamily: "Lato, system-ui, sans-serif",
+    whiteSpace: "nowrap",
   },
   header: {
+    backgroundColor: "#293120",
+    backgroundImage:
+      "linear-gradient(rgba(31, 15, 9, 0.509), rgba(0, 0, 0, 0.3)), url('/images/header.png')",
+    backgroundPosition: "center, center 8%",
+    backgroundRepeat: "no-repeat",
+    backgroundSize: "100% 100%, 120% auto",
     borderBottom: `1px solid ${theme.textWhite}`,
-    color: "rgba(255, 255, 255, 0.633)",
-    padding: "0.5em 1em",
+    color: theme.textWhite,
+    padding: "0.5rem 1rem",
     display: "flex",
     alignItems: "center",
     alignContent: "center",
-    flexWrap: "wrap",
-    gap: "0.5ch",
+    flexDirection: "row",
+    gap: "0.5rem",
+    width: "100%",
+    height: "3rem",
     minHeight: "3rem",
     boxSizing: "border-box",
+    lineHeight: 1,
+    overflow: "hidden",
   },
   headerNav: {
     display: "flex",
     alignItems: "center",
-    flexWrap: "wrap",
+    flex: "1 1 auto",
+    flexWrap: "nowrap",
+    minWidth: 0,
     gap: "0.5ch",
+    margin: 0,
     padding: "0 0.5ch",
+    overflowX: "auto",
+    whiteSpace: "nowrap",
   },
   headerLink: {
     borderBottom: "1px solid transparent",
@@ -61,6 +73,7 @@ const styles: Record<string, CSSProperties> = {
     display: "inline-block",
     fontSize: "16px",
     fontWeight: 600,
+    lineHeight: 1.2,
     margin: "0.1rem 0.25rem",
     textDecoration: "none",
   },
@@ -70,6 +83,7 @@ const styles: Record<string, CSSProperties> = {
     display: "inline-block",
     fontSize: "16px",
     fontWeight: 600,
+    lineHeight: 1.2,
     margin: "0.1rem 0.25rem",
     textDecoration: "none",
   },
@@ -80,7 +94,8 @@ const styles: Record<string, CSSProperties> = {
     fontSize: "20px",
     fontWeight: 600,
     gap: "8px",
-    marginBottom: 0,
+    margin: 0,
+    lineHeight: 1,
     textDecoration: "none",
     whiteSpace: "nowrap",
   },
@@ -91,6 +106,7 @@ const styles: Record<string, CSSProperties> = {
     fontSize: "16px",
     fontWeight: 500,
     letterSpacing: "0.06em",
+    lineHeight: 1.2,
     padding: "2px 6px",
   },
   main: {
@@ -98,29 +114,31 @@ const styles: Record<string, CSSProperties> = {
     boxSizing: "border-box",
     flex: 1,
     margin: 0,
-    padding: "1.5rem clamp(1rem, 3vw, 2.5rem)",
+    minHeight: 0,
+    padding: "1rem clamp(1rem, 2vw, 2rem)",
     width: "100%",
   },
   h1: {
     fontSize: "clamp(2rem, 4vw, 3.25rem)",
     fontWeight: 700,
     color: theme.text,
-    marginBottom: "8px",
+    margin: "0 0 4px",
     lineHeight: 1.05,
   },
   lead: {
     fontSize: "15px",
     color: theme.textDim,
-    lineHeight: 1.7,
-    marginBottom: "36px",
-    maxWidth: "640px",
+    lineHeight: 1.4,
+    margin: "0 0 12px",
+    maxWidth: "none",
+    whiteSpace: "nowrap",
   },
   card: {
     background: theme.bgCard,
     border: `1px solid ${theme.border}`,
     borderRadius: "6px",
-    padding: "28px",
-    marginBottom: "20px",
+    padding: "18px",
+    marginBottom: "12px",
   },
   cardTitle: {
     fontSize: "12px",
@@ -128,7 +146,8 @@ const styles: Record<string, CSSProperties> = {
     letterSpacing: "0.08em",
     color: theme.green,
     textTransform: "uppercase",
-    marginBottom: "20px",
+    marginBottom: "12px",
+    whiteSpace: "nowrap",
   },
   label: {
     display: "block",
@@ -136,6 +155,7 @@ const styles: Record<string, CSSProperties> = {
     color: theme.textDim,
     marginBottom: "8px",
     fontWeight: 700,
+    whiteSpace: "nowrap",
   },
   input: {
     width: "100%",
@@ -146,7 +166,7 @@ const styles: Record<string, CSSProperties> = {
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
     fontSize: "13px",
     padding: "10px 14px",
-    marginBottom: "20px",
+    marginBottom: "12px",
     boxSizing: "border-box",
     outline: "none",
   },
@@ -183,13 +203,14 @@ const styles: Record<string, CSSProperties> = {
     display: "flex",
     alignItems: "flex-start",
     gap: "10px",
-    marginBottom: "20px",
+    marginBottom: "12px",
     cursor: "pointer",
   },
   checkboxLabel: {
     fontSize: "13px",
     color: theme.textDim,
     lineHeight: 1.5,
+    whiteSpace: "nowrap",
   },
   btn: {
     background: theme.green,
@@ -202,6 +223,7 @@ const styles: Record<string, CSSProperties> = {
     fontFamily: "inherit",
     letterSpacing: "0.05em",
     cursor: "pointer",
+    whiteSpace: "nowrap",
   },
   btnSecondary: {
     background: "transparent",
@@ -212,29 +234,31 @@ const styles: Record<string, CSSProperties> = {
     fontSize: "12px",
     fontFamily: "inherit",
     cursor: "pointer",
+    whiteSpace: "nowrap",
   },
   cite: {
     background: "rgba(119,108,77,0.08)",
     border: `1px solid rgba(119,108,77,0.28)`,
     borderRadius: "6px",
-    padding: "14px 18px",
+    padding: "9px 14px",
     fontSize: "12px",
     color: theme.textMuted,
-    marginBottom: "28px",
-    lineHeight: 1.6,
+    marginBottom: "12px",
+    lineHeight: 1.4,
+    whiteSpace: "nowrap",
   },
   row: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
-    gap: "20px",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: "16px",
     alignItems: "start",
-    maxWidth: "1100px",
+    width: "100%",
   },
   sidebar: {
     background: theme.bgCard,
     border: `1px solid ${theme.border}`,
     borderRadius: "6px",
-    padding: "22px",
+    padding: "16px",
   },
   sidebarTitle: {
     fontSize: "11px",
@@ -242,13 +266,15 @@ const styles: Record<string, CSSProperties> = {
     letterSpacing: "0.15em",
     color: theme.textMuted,
     textTransform: "uppercase",
-    marginBottom: "14px",
+    marginBottom: "10px",
+    whiteSpace: "nowrap",
   },
   sidebarText: {
     fontSize: "12px",
     color: theme.textDim,
-    lineHeight: 1.7,
-    marginBottom: "12px",
+    lineHeight: 1.4,
+    margin: "0 0 8px",
+    whiteSpace: "nowrap",
   },
   statusBox: {
     textAlign: "center",
@@ -277,12 +303,14 @@ const styles: Record<string, CSSProperties> = {
     letterSpacing: "0.08em",
     fontSize: "11px",
     textTransform: "uppercase" as const,
+    whiteSpace: "nowrap",
   },
   td: {
     padding: "10px 14px",
     borderBottom: `1px solid ${theme.border}`,
     color: theme.textDim,
     fontFamily: "'IBM Plex Mono', monospace",
+    whiteSpace: "nowrap",
   },
 }
 
@@ -296,7 +324,7 @@ function alertStyle(type: "info" | "warn" | "error"): CSSProperties {
           : "rgba(179,58,58,0.08)",
     border: `1px solid ${type === "info" ? theme.greenDim : type === "warn" ? theme.amber : theme.red}`,
     borderRadius: "6px",
-    padding: "14px 18px",
+    padding: "10px 14px",
     fontSize: "13px",
     color:
       type === "info"
@@ -304,8 +332,9 @@ function alertStyle(type: "info" | "warn" | "error"): CSSProperties {
         : type === "warn"
           ? theme.amber
           : theme.red,
-    marginBottom: "24px",
-    lineHeight: 1.6,
+    marginBottom: "12px",
+    lineHeight: 1.4,
+    whiteSpace: "nowrap",
   }
 }
 
@@ -326,7 +355,7 @@ function alertStyle(type: "info" | "warn" | "error"): CSSProperties {
 interface JobData {
   jobId: string
   email: string
-  // useProdigal: boolean
+  useProdigal: boolean
 }
 
 interface UploadPageProps {
@@ -621,10 +650,10 @@ function OperonDiagram({ item }: { item: OperonMetadata }) {
 function CitingBanner() {
   return (
     <div style={styles.cite}>
-      <strong style={{ color: theme.green }}>Please cite:</strong> DiazoDB: Interactive Nitrogenase Web Database, Shivji (2026)· <a href="https://doi.org/10.5281/zenodo.21909831">doi: 10.5281/zenodo.21909831</a> · Check out our <a href="https://github.com/zshivji/diazoDB-HPC" target="_blank" rel="noopener">GitHub!</a>{" "}
+      <strong style={{ color: theme.green }}>Please cite:</strong> LanTree: Interactive Lanthanide Dependent Enzyme Database, Shivji (2026)· <a href="https://doi.org/10.5281/zenodo.21909831">doi: 10.5281/zenodo.21909831</a> · Check out our <a href="https://github.com/zshivji/LanTree" target="_blank" rel="noopener">GitHub!</a>{" "}
       {/* <span style={{ color: theme.textDim }}>
         Predicting and classifying nitrogenase sequences from metagenomes using
-        DiazoDB.
+        LanTree.
       </span> */}
     </div>
   )
@@ -638,7 +667,7 @@ function UploadPage({ onSubmit }: UploadPageProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
-  // const [useProdigal, setUseProdigal] = useState(false)
+  const [useProdigal, setUseProdigal] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -680,7 +709,7 @@ function UploadPage({ onSubmit }: UploadPageProps) {
           file_size_bytes: selectedFile.size,
           include_in_database: includeInDatabase,
           orcid: orcid.trim() || null,
-          // use_prodigal: useProdigal,
+          use_prodigal: useProdigal,
         }),
       })
       if (!res.ok) {
@@ -727,7 +756,7 @@ function UploadPage({ onSubmit }: UploadPageProps) {
         setUploadProgress(Math.round((offset / selectedFile.size) * 100))
       }
 
-      onSubmit({ jobId: data.id, email })
+      onSubmit({ jobId: data.id, email, useProdigal })
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error"
       setError(`Could not submit job: ${message}`)
@@ -738,10 +767,9 @@ function UploadPage({ onSubmit }: UploadPageProps) {
 
   return (
     <div style={styles.main}>
-      <h1 style={styles.h1}>Classify Nitrogenase Sequences</h1>
+      <h1 style={styles.h1}>Annotate Lanthanide Dependent Enzymes</h1>
       <p style={styles.lead}>
-        DiazoDB provides accurate prediction and classification of nitrogenase
-        sequences from MAGs.
+        LanTree provides accurate prediction and classification of PQQ-dependent dehydrogenase proteins from sequence data.
       </p>
       <CitingBanner />
 
@@ -751,12 +779,11 @@ function UploadPage({ onSubmit }: UploadPageProps) {
             <div style={styles.cardTitle}>Submit sequences</div>
             {error && <div style={alertStyle("error")}>{error}</div>}
             <div style={alertStyle("info")}>
-              DiazoDB annotates nitrogenase catalytic proteins (NifH, NifD,
-              NifK, NifE, NifK) and classifies them into Groups I-IV. 
+              LanTree annotates PQQ-dependent dehydrogenase and classifies their metal dependence based on active site residues.
             </div>
 
             <label style={styles.label}>
-              Email address (for results notification)
+              Optional: Email address (for results notification)
             </label>
             <input
               style={styles.input}
@@ -775,16 +802,16 @@ function UploadPage({ onSubmit }: UploadPageProps) {
               />
               <div>
                 <div style={{ ...styles.checkboxLabel, color: theme.text, fontWeight: 600 }}>
-                  Include my nitrogenase results in DiazoDB
+                  Include my results in LanTree
                 </div>
                 <div style={styles.checkboxLabel}>
-                  Allow these submitted results to be incorporated into the database.
+                  Allow my submitted results to be incorporated into the database.
                 </div>
               </div>
             </label>
 
             <label style={styles.label}>
-              ORCID iD (optional, for the contributor page)
+              ORCID iD (optional, if you make your results public your ORCID will appear on the contributor page)
             </label>
             <input
               style={styles.input}
@@ -816,10 +843,10 @@ function UploadPage({ onSubmit }: UploadPageProps) {
               style={{
                 border: `1px dashed ${dragging ? theme.green : theme.borderHover}`,
                 borderRadius: "6px",
-                padding: "24px",
+                padding: "16px",
                 textAlign: "center",
                 cursor: "pointer",
-                marginBottom: "20px",
+                marginBottom: "12px",
                 background: dragging ? theme.greenGlow : theme.bgInput,
               }}
               onClick={() => fileRef.current?.click()}
@@ -861,13 +888,13 @@ function UploadPage({ onSubmit }: UploadPageProps) {
               </div>
             )}
 
-            {/* <div style={styles.divider}>
+            <div style={styles.divider}>
               <div style={styles.dividerLine} />
               options
               <div style={styles.dividerLine} />
-            </div> */}
+            </div>
 
-            {/* <label style={styles.checkbox}>
+            <label style={styles.checkbox}>
               <input
                 type="checkbox"
                 checked={useProdigal}
@@ -885,12 +912,12 @@ function UploadPage({ onSubmit }: UploadPageProps) {
                   Predict CDS with Prodigal
                 </div>
                 <div style={styles.checkboxLabel}>
-                  If your input is nucleotide (DNA) sequences, DiazoDB can run
+                  If your input is nucleotide (DNA) sequences, LanTree can run
                   Prodigal to predict coding sequences before classification. Do
                   not check this for protein sequences.
                 </div>
               </div>
-            </label> */}
+            </label>
 
             <button
               style={{ ...styles.btn, opacity: loading ? 0.6 : 1 }}
@@ -908,24 +935,24 @@ function UploadPage({ onSubmit }: UploadPageProps) {
             <p style={styles.sidebarText}>
               Upload a <code>.fasta</code>{" "} with CDS regions predicted with Prodigal.
             </p>
-            {/* <p style={styles.sidebarText}>
+            <p style={styles.sidebarText}>
               For nucleotide input from metagenomes, enable{" "}
               <strong style={{ color: theme.textDim }}>
                 Prodigal CDS prediction
               </strong>{" "}
               to automatically predict protein-coding sequences before
               classification.
-            </p> */}
+            </p>
             <p style={styles.sidebarText}>
               Provide your email to receive a link when the job completes or
               fails.
             </p>
             <p style={styles.sidebarText}>
-              ORCID iDs are saved for the future DiazoDB contributor page.
+              ORCID iDs are saved for the future LanTree contributor page.
             </p>
           </div>
 
-          <div style={{ ...styles.sidebar, marginTop: "16px" }}>
+          <div style={{ ...styles.sidebar, marginTop: "12px" }}>
             <div style={styles.sidebarTitle}>Limits</div>
             <p style={styles.sidebarText}>Max runtime: 72 hours</p>
             <p style={styles.sidebarText}>Max file size: 20GB</p>
@@ -1180,7 +1207,7 @@ function ResultsPage({ jobId, onReset }: ResultsPageProps) {
           }}
         >
           <div style={styles.cardTitle}>Classification Results</div>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "nowrap" }}>
             <button
               style={styles.btn}
               onClick={() =>
@@ -1325,7 +1352,7 @@ function ResultsPage({ jobId, onReset }: ResultsPageProps) {
                   justifyContent: "space-between",
                   gap: "12px",
                   marginBottom: "12px",
-                  flexWrap: "wrap",
+                  flexWrap: "nowrap",
                 }}
               >
                 <div style={{ color: theme.text, fontSize: "13px", fontWeight: 700 }}>
@@ -1384,7 +1411,7 @@ function FailurePage({ jobId, onReset }: FailurePageProps) {
         An error occurred while running your job. Please check that your input
         is valid FASTA format. If the error persists, contact{" "}
         <a
-          href={`mailto:admin@diazo.db?subject=DiazoDB Error: ${jobId}`}
+          href={`mailto:lantree@caltech.edu?subject=LanTree Error: ${jobId}`}
           style={{ color: theme.red }}
         >
           the administrator
@@ -1443,7 +1470,7 @@ function FailurePage({ jobId, onReset }: FailurePageProps) {
 type View = "upload" | "waiting" | "results" | "failure"
 
 
-export default function DiazoDB() {
+export default function LanTree() {
   useEffect(() => {
     const measurementId = "G-89SKEBYC49"
     const scriptId = "google-gtag"
@@ -1494,14 +1521,14 @@ export default function DiazoDB() {
     <div style={styles.page}>
       <header style={styles.header}>
         <a href="/" style={styles.logo}>
-          DiazoDB <span style={styles.logoBadge}>Upload</span>
+          LanTree <span style={styles.logoBadge}>Upload</span>
         </a>
         <nav style={styles.headerNav} aria-label="Primary navigation">
           <a href="/" style={styles.headerLink}>
             Phylogeny
           </a>
           <a href="/database" style={styles.headerLink}>
-            DiazoDB
+            LanTree
           </a>
           <a href="/classify" style={styles.headerLinkActive}>
             Upload

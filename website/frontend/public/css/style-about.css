@@ -20,7 +20,11 @@ body {
 body {
   margin: 0;
   color: var(--ink);
-  background: var(--page) url("../images/header.png") top center / 100% 18rem no-repeat;
+  background-color: var(--page);
+  background-image: url("../images/header.png");
+  background-position: top center;
+  background-repeat: no-repeat;
+  background-size: cover;
   font-family: Lato, "Helvetica Neue", sans-serif;
   line-height: 1.65;
 }

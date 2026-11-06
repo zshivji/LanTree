@@ -1,0 +1,14 @@
+name: lantree-static-test
+
+services:
+  frontend:
+    image: lantree-frontend:test
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: http://131.215.65.63:8000
+        NODE_ENV: production
+    ports:
+      - "3001:80"
+    restart: unless-stopped

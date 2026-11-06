@@ -4,18 +4,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DiazoDB - About</title>
+  <title>LanTree - About</title>
   <link rel="icon" href="./assets/images/FeMoco-favicon.ico" />
   <link rel="stylesheet" href="./css/style-about.css" />
+  <link rel="stylesheet" href="./css/site-header.css" />
 </head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-29RF7N32WC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-29RF7N32WC');
+</script>
 
 <body>
   <div id="root">
     <header>
       <div class="header">
-        <a href="/" class="logo">DiazoDB <span class="logo-badge">About</span></a>
+        <a href="/" class="logo">LanTree <span class="logo-badge">About</span></a>
         <nav class="header__navigation" aria-label="Primary navigation">
-          <a href="/database">DiazoDB</a>
+          <a href="/database">LanTree</a>
           <a href="/">Phylogeny</a>
           <a href="/classify">Upload</a>
           <a href="/about" aria-current="page">About</a>
@@ -27,12 +38,12 @@
 
     <main>
       <section class="intro">
-        <p class="eyebrow">DiazoDB</p>
+        <p class="eyebrow">LanTree</p>
         <h1>About the database</h1>
         <p class="lede">Automated annotation and curation of nitrogenase genes using profile hidden Markov models and conserved residue matching.</p>
       </section>
 
-      <section class="about-tabs" aria-label="About DiazoDB">
+      <section class="about-tabs" aria-label="About LanTree">
         <div class="tab-list" role="tablist" aria-label="About sections">
           <button class="tab-button is-active" id="tab-citation" role="tab" aria-selected="true" aria-controls="panel-citation">Citation</button>
           <button class="tab-button" id="tab-source" role="tab" aria-selected="false" aria-controls="panel-source" tabindex="-1">Source code</button>
@@ -44,14 +55,14 @@
 
         <div class="tab-panel is-active" id="panel-citation" role="tabpanel" aria-labelledby="tab-citation" tabindex="0">
           <h2>Citation</h2>
-          <p>DiazoDB: Interactive Nitrogenase Web Database, Shivji (2026).</p>
+          <p>LanTree: Interactive Nitrogenase Web Database, Shivji (2026).</p>
           <p><a href="https://doi.org/10.5281/zenodo.21909831" target="_blank" rel="noopener">doi:10.5281/zenodo.21909831</a></p>
         </div>
 
         <div class="tab-panel" id="panel-source" role="tabpanel" aria-labelledby="tab-source" tabindex="0" hidden>
           <h2>Source code</h2>
-          <p>DiazoDB is developed in the open. The repository contains the analysis scripts, HMM seeds, web application, and reproducibility files.</p>
-          <p><a href="https://github.com/zshivji/diazoDB-HPC" target="_blank" rel="noopener">View the DiazoDB source code on GitHub</a></p>
+          <p>LanTree is developed in the open. The repository contains the analysis scripts, HMM seeds, web application, and reproducibility files.</p>
+          <p><a href="https://github.com/zshivji/LanTree-HPC" target="_blank" rel="noopener">View the LanTree source code on GitHub</a></p>
         </div>
 
         <div class="tab-panel" id="panel-provenance" role="tabpanel" aria-labelledby="tab-provenance" tabindex="0" hidden>
@@ -67,14 +78,14 @@
 
         <div class="tab-panel" id="panel-acknowledgements" role="tabpanel" aria-labelledby="tab-acknowledgements" tabindex="0" hidden>
           <h2>Acknowledgements</h2>
-          <p>DiazoDB relies on the Genome Taxonomy Database and the open-source bioinformatics tools documented in the repository.</p>
+          <p>LanTree relies on the Genome Taxonomy Database and the open-source bioinformatics tools documented in the repository.</p>
           <p>This section will be expanded as project contributors and supporting resources are formally documented.</p>
         </div>
 
         <div class="tab-panel" id="panel-license" role="tabpanel" aria-labelledby="tab-license" tabindex="0" hidden>
           <h2>License</h2>
-          <p>No license file is currently included in the DiazoDB repository. Please contact the project maintainers before redistributing code or data.</p>
-          <p><a href="https://github.com/zshivji/diazoDB-HPC" target="_blank" rel="noopener">Check the repository for licensing updates</a></p>
+          <p>No license file is currently included in the LanTree repository. Please contact the project maintainers before redistributing code or data.</p>
+          <p><a href="https://github.com/zshivji/LanTree-HPC" target="_blank" rel="noopener">Check the repository for licensing updates</a></p>
         </div>
 
         <div class="tab-panel" id="panel-contributors" role="tabpanel" aria-labelledby="tab-contributors" tabindex="0" hidden>
@@ -88,7 +99,7 @@
     </main>
 
     <footer>
-      <p><strong>Citation:</strong> DiazoDB: Interactive Nitrogenase Web Database, Shivji (2026) · <a href="https://doi.org/10.5281/zenodo.21909831">doi: 10.5281/zenodo.21909831</a> · <a href="https://github.com/zshivji/diazoDB-HPC" target="_blank" rel="noopener">GitHub</a></p>
+      <p><strong>Citation:</strong> LanTree: Interactive Nitrogenase Web Database, Shivji (2026) · <a href="https://doi.org/10.5281/zenodo.21909831">doi: 10.5281/zenodo.21909831</a> · <a href="https://github.com/zshivji/LanTree-HPC" target="_blank" rel="noopener">GitHub</a></p>
     </footer>
   </div>
 

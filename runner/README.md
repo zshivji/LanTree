@@ -1,0 +1,105 @@
+# DiazoDB HPC Runner
+
+The runner is intended to run on the HPC login/service node. It polls the web
+API for ready jobs, downloads each submitted input file over HTTPS, submits the
+analysis to Slurm, and posts the final result back to the API.
+
+This avoids SSH/SCP from the web server into the cluster. The only secret shared
+between systems is `RUNNER_SECRET`. 
+
+## Minimal Environment
+
+```bash
+API_URL=https://api.example.edu
+RUNNER_SECRET=<same value as website RUNNER_SECRET>
+HPC_JOB_BASE=/scratch/zshivji/diazodb/jobs
+# Persistent destination for submissions that opt into the database.
+HPC_DATABASE_BASE=/diazoDB-HPC/uploads
+SLURM_SCRIPT=/path/to/diazoDB-HPC/bin/diazodb_classify.sh
+SLURM_WAIT_TIMEOUT_SECONDS=32400
+```
+
+Optional pipeline settings consumed by `bin/diazodb_classify.sh`:
+
+```bash
+DIAZODB_CONDA_ENV=/path/to/conda/env
+DIAZODB_CONDA_BIN=/path/to/miniconda3/bin/conda
+DIAZODB_HMM_PROFILE=/path/to/combined_nif.hmm
+DIAZODB_USE_PRODIGAL=false
+```
+
+The runner sizes each Slurm submission from the downloaded input file. The
+current calibration point is a 2,004,971-byte input that used 106 seconds of
+walltime. Defaults are bounded at 10-70 minutes, 1-4 CPUs, and 16-100 GB of
+memory, with a 3x time safety factor. These settings can be tuned without code
+changes:
+
+```bash
+DIAZODB_REFERENCE_INPUT_BYTES=2004971
+DIAZODB_REFERENCE_ELAPSED_SECONDS=106
+DIAZODB_RESOURCE_SAFETY_FACTOR=3
+DIAZODB_MIN_TIME_MINUTES=10
+DIAZODB_MAX_TIME_MINUTES=70
+DIAZODB_MIN_MEMORY_GB=16
+DIAZODB_MAX_MEMORY_GB=100
+DIAZODB_MAX_CPUS=4
+```
+
+The runner performs one poll per invocation and is intended to be invoked
+periodically by cron.
+
+## Per-job files
+
+Each API job is isolated under its UUID:
+
+```text
+HPC_JOB_BASE/<job-id>/
+├── input/                         # downloaded user input
+├── intermediate/
+│   ├── predicted_proteins.faa    # present when Prodigal is requested
+│   ├── hmmsearch_results/
+│   │   ├── hmm_out/               # raw .out and .domtblout files
+│   │   └── hits.csv               # this job's parsed HMM hits
+│   ├── conserved_res/             # FASTAs, alignments, residue checks
+│   └── proteins/
+│       ├── user/                   # uploaded or Prodigal-predicted proteins
+│       └── reference/              # packaged conserved-residue references
+├── results/
+│   ├── nif_clusters.csv           # classification result uploaded to the API
+│   ├── nif_final.csv               # detailed result uploaded to the API
+│   └── fastas/                    # final FASTAs grouped by gene call
+└── logs/
+    ├── slurm-<name>-<id>.out
+    └── slurm-<name>-<id>.err
+```
+
+Jobs with `include_in_database=true` are copied after successful analysis to
+`HPC_DATABASE_BASE/<job-id>/`. The archive contains the original input, the
+published result files, and `manifest.json`. Jobs that do not opt in remain
+under `HPC_JOB_BASE` and can be removed using the normal scratch retention
+policy.
+
+Create the persistent destination on the HPC before starting the runner:
+
+```bash
+mkdir -p /diazoDB-HPC/uploads
+chmod 750 /diazoDB-HPC/uploads
+```
+
+Do not use `/diazoDB-HPC/postgres` for this integration. PostgreSQL runs on the
+Sassy server, and a directory on the separate HPC cannot be mounted into that
+Docker container. Keep `/diazoDB-HPC/postgres` only if you later run a separate
+HPC database service.
+
+The runner passes the job-specific parsed hits, temporary-results directory,
+final-results directory, protein lookup directory, and reference IDs directly
+to `conserved-res.py`. Separate cron invocations therefore do not share mutable
+analysis files.
+
+Runner jobs do not read the GTDB representative-genome corpus or GTDB metadata.
+They use the uploaded genome/proteome plus the small fixed reference FASTA in
+`runner/references/`. Bacterial and archaeal uploads follow the same execution
+path.
+
+Input downloads are streamed to disk in 8 MiB chunks, so the runner does not
+hold a multi-gigabyte upload in memory.

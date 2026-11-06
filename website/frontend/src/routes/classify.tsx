@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import DiazoDB from "../components/DiazoDB"
+import LanTree from "../components/LanTree"
 
 export const Route = createFileRoute("/classify")({
-  component: DiazoDB,
+  component: LanTree,
 })

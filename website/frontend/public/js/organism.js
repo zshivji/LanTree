@@ -322,7 +322,7 @@ function renderOrganismPage(records) {
   const regulons = [...new Set(records.map(({ meta }) => normalizeText(meta.regulon)))]
   const taxonomies = [...new Set(records.map(({ meta }) => formatTaxonomy(meta.taxonomy)))]
 
-  document.title = `${organism} - DiazoDB`
+  document.title = `${organism} - LanTree`
 
   return `
     <div class="organism-back-row">

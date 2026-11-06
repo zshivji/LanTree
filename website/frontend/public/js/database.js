@@ -10,7 +10,7 @@ const downloadFastaBtn = document.getElementById("downloadFastaBtn")
 const downloadFastaDropdown = document.querySelector("[data-download-dropdown]")
 const tableSearchInput = document.getElementById("tableSearchInput")
 const tableSearchForm = document.getElementById("tableSearchForm")
-const CSV_PATH = "../results/nif_clusters.csv"
+const CSV_PATH = "../results/MDH_genomes.csv"
 const USER_RECORDS_PATH = "/api/v1/database/user-records"
 
 const ROW_HEIGHT = 40 // must match CSS .data-row height
@@ -21,7 +21,7 @@ let visibleRows = []
 const currentSort = { key: null, dir: "asc" }
 let _currentSearchQuery = "" // Store current search query
 
-const table = document.getElementById("diazoDB-table")
+const table = document.getElementById("LanTree-table")
 if (!tbody || !tpl || !viewport || !topSpacer || !bottomSpacer || !table) {
   throw new Error("Missing required table elements in database.html")
 }
@@ -30,28 +30,25 @@ const headers = Array.from(table.querySelectorAll("thead th[data-column-name]"))
 
 const rowCellMap = {
   ".col-Organism": "Organism",
-  ".col-NitrogenaseSet": "Nitrogenase Set",
   ".col-Env": "Isolation Source",
   // ".col-Regulon": "Regulon",
   // ".col-PredGrowthTemp": "PredGrowthTemp",
-  ".col-ContigAcc": "contig",
+  ".col-ContigAcc": "Contig",
   ".col-GTDBPhylo": "GTDB Taxonomy",
-  ".col-Cluster": "cluster",
-  ".col-Provenance": "Provenance",
+  // ".col-Cluster": "cluster",
+  ".col-Provenance": "Provenance"
 }
 
 const sortKeyMap = {
   "Organism": "Organism",
-  "GroupNo": "Group",
-  "NitrogenaseSet": "Nitrogenase Set",
+  "MetalDependence": "MetalDependence",
   "Env": "Isolation Source",
   "GenomeID": "GenomeID",
   // "Regulon": "Regulon",
   // "PredGrowthTemp": "PredGrowthTemp",
-  "ContigAcc": "contig",
+  "ContigAcc": "Contig",
   "GTDBPhylo": "GTDB Taxonomy",
-  "Cluster": "cluster",
-  "Provenance": "Provenance",
+  "Provenance": "Provenance"
 }
 
 const searchableColumnKeys = headers.map(
@@ -86,25 +83,47 @@ function cleanGTDBPhylo(taxonomy) {
   return String(taxonomy || "").replace(/[a-z]__/g, "").replace(/;/g, " → ");
 }
 
-function getGroupTagClass(groupValue) {
-  const normalized = String(groupValue ?? "")
-    .toLowerCase()
-    .replace(/\s+/g, "")
-    .replace(/^group/, "")
+function metalDependenceFromLDE(ldeValue) {
+  const value = String(ldeValue ?? "").trim()
+  if (value === "") return ""
 
-  if (/^(1|i)$/.test(normalized)) return "group-tag--g1"
-  if (/^(2|ii)$/.test(normalized)) return "group-tag--g2"
-  if (/^(3|iii)$/.test(normalized)) return "group-tag--g3"
-  if (/^(3-vnf|iii-vnf)$/.test(normalized)) return "group-tag--g3vnf"
-  if (/^(3-anf|iii-anf)$/.test(normalized)) return "group-tag--g3anf"
-  if (/^(4|iv)$/.test(normalized)) return "group-tag--g4"
-  if (/^(4a|iva)$/.test(normalized)) return "group-tag--g4a"
-  if (/^(4b|ivb)$/.test(normalized)) return "group-tag--g4b"
-  if (/^(4c|ivc)$/.test(normalized)) return "group-tag--g4b"
-  return "group-tag--other"
+  const numericValue = Number(value)
+  if (numericValue === 1) return "Ln"
+  if (numericValue === 0) return "Ca"
+  return ""
 }
 
-// load final nitrogenase data, display in table
+function organismFromTaxonomy(taxonomy) {
+  const ranks = String(taxonomy ?? "").split(";").reverse()
+  for (const rank of ranks) {
+    const name = rank.replace(/^[a-z]__/, "").trim()
+    if (name) return name
+  }
+  return ""
+}
+
+function normalizeDatabaseRow(row, defaultProvenance = "") {
+  const taxonomy =
+    row["GTDB Taxonomy"] ?? row.gtdb_taxonomy ?? row.GTDB ?? ""
+  const metalDependence =
+    row.MetalDependence ??
+    row["Metal Dependence"] ??
+    metalDependenceFromLDE(row.LDE)
+
+  return {
+    ...row,
+    GenomeID: row.GenomeID ?? row.Genome ?? "",
+    Contig: row.Contig ?? row.contig ?? "",
+    "GTDB Taxonomy": taxonomy,
+    "Isolation Source":
+      row["Isolation Source"] ?? row.ncbi_isolation_source ?? "",
+    Organism: row.Organism ?? organismFromTaxonomy(taxonomy),
+    MetalDependence: metalDependence,
+    Provenance: row.Provenance ?? defaultProvenance,
+  }
+}
+
+// Build one visible LanTree database row.
 function buildRowNode(row, idx) {
   const node = tpl.content.cloneNode(true)
   const tr = node.querySelector("tr")
@@ -121,7 +140,7 @@ function buildRowNode(row, idx) {
   label.setAttribute("aria-label", input.dataset.id)
 
   // accession link
-  const GenomeID = String(row.GenomeID || "")
+  const GenomeID = String(row.GenomeID ?? "")
   const genomeParts = GenomeID.split("_")
   const GenomeIDRaw =
     genomeParts.length >= 3 ? `${genomeParts[1]}_${genomeParts[2]}` : GenomeID
@@ -149,19 +168,18 @@ function buildRowNode(row, idx) {
     cell.textContent = value
   })
 
-  const groupCell = tr.querySelector(".col-GroupNo")
-  if (groupCell) {
-    // The cluster CSV calls this field "Group"; keep GroupNo for older uploads.
-    const value = String(row.Group ?? row.GroupNo ?? "").trim()
+  const metalCell = tr.querySelector(".col-MetalDependence")
+  if (metalCell) {
+    const value = String(row.MetalDependence ?? "").trim()
     if (value) {
       const tag = document.createElement("span")
-      tag.className = `group-tag ${getGroupTagClass(value)}`
+      tag.className = `metal-tag metal-tag--${value.toLowerCase()}`
       tag.textContent = value
       tag.setAttribute("translate", "no")
-      groupCell.textContent = ""
-      groupCell.appendChild(tag)
+      metalCell.textContent = ""
+      metalCell.appendChild(tag)
     } else {
-      groupCell.textContent = ""
+      metalCell.textContent = ""
     }
   }
 
@@ -347,7 +365,7 @@ async function downloadCurrentCsv() {
   const blobUrl = URL.createObjectURL(blob)
   const tempLink = document.createElement("a")
   tempLink.href = blobUrl
-  tempLink.download = "nif_clusters.csv"
+  tempLink.download = "MDH_genomes.csv"
   document.body.appendChild(tempLink)
   tempLink.click()
   tempLink.remove()
@@ -420,11 +438,11 @@ Promise.all([
   }).catch(() => []),
 ])
   .then(([csvText, userRows]) => {
-    const gtdbRows = parseCSVToObjects(csvText).map((row) => ({
-      ...row,
-      Provenance: "GTDB",
-    }))
-    const rows = [...gtdbRows, ...userRows]
+    const gtdbRows = parseCSVToObjects(csvText).map((row) =>
+      normalizeDatabaseRow(row, "GTDB"),
+    )
+    const normalizedUserRows = userRows.map((row) => normalizeDatabaseRow(row))
+    const rows = [...gtdbRows, ...normalizedUserRows]
     console.log(`Parsed ${gtdbRows.length} GTDB rows and ${userRows.length} user rows.`)
     allData = rows
     renderTable(rows)

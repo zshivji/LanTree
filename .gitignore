@@ -9,3 +9,6 @@ website/local_uploads/
 website/frontend/test-results/
 website/frontend/blob-report/
 
+# runner
+runner/.env
+runner/runner.log

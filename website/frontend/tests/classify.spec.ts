@@ -24,10 +24,10 @@ test("Classify page is accessible and shows correct title", async ({
   ).toBeVisible()
 })
 
-test("DiazoDB logo and subtitle are visible", async ({ page }) => {
+test("LanTree logo and subtitle are visible", async ({ page }) => {
   await page.goto("/classify")
 
-  await expect(page.getByText("DiazoDB", { exact: true }).first()).toBeVisible()
+  await expect(page.getByText("LanTree", { exact: true }).first()).toBeVisible()
   await expect(page.getByText("nitrogenase sequence classifier")).toBeVisible()
 })
 

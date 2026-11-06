@@ -1,0 +1,145 @@
+:root {
+  --site-header-height: 3rem;
+  --site-header-text: #fbfeff;
+  --site-header-accent: #776c4d;
+}
+
+/* Keep the banner crop independent of each page's content height. */
+html,
+body {
+  background-image: none !important;
+}
+
+body > header,
+#root > header,
+header.site-header {
+  height: var(--site-header-height);
+  min-height: var(--site-header-height);
+  background-color: #293120;
+  background-image:
+    linear-gradient(rgba(31, 15, 9, 0.509), rgba(0, 0, 0, 0.3)),
+    url("../images/header.png");
+  background-position: center, center 8%;
+  background-repeat: no-repeat;
+  background-size: 100% 100%, 120% auto;
+}
+
+.header,
+header.site-header {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  align-content: center;
+  flex-direction: row;
+  width: 100%;
+  height: var(--site-header-height);
+  min-height: var(--site-header-height);
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  color: var(--site-header-text);
+  font-family: Lato, Arial, Helvetica, sans-serif;
+  line-height: 1;
+  overflow: hidden;
+}
+
+.header > *,
+header.site-header > * {
+  flex: 0 0 auto;
+}
+
+.header .logo,
+header.site-header .logo {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+  margin: 0;
+  color: var(--site-header-text);
+  font-family: Lato, Arial, Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.header .logo-badge,
+header.site-header .logo-badge {
+  box-sizing: border-box;
+  display: inline-block;
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: #fff;
+  background: var(--site-header-accent);
+  font-family: Lato, Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+}
+
+.header__navigation,
+header.site-header .nav {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  gap: 0.5ch;
+  margin: 0;
+  padding: 0 0.5ch;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+
+.header__navigation::-webkit-scrollbar,
+header.site-header .nav::-webkit-scrollbar {
+  display: none;
+}
+
+.header__navigation a,
+header.site-header .nav a {
+  display: inline-block;
+  flex: 0 0 auto;
+  border-bottom: 1px solid transparent;
+  margin: 0.1rem 0.25rem;
+  padding: 0;
+  color: var(--site-header-text);
+  font-family: Lato, Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.header__navigation a:hover,
+.header__navigation a[aria-current="page"],
+header.site-header .nav a:hover {
+  border-bottom-color: currentColor;
+  color: var(--site-header-text);
+}
+
+hr.header-separator {
+  width: 100%;
+  height: 0;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+/* Database: use one background layer across the banner and main content so the
+   image crop remains continuous at the header separator. */
+body.database-page #root {
+  background-color: #293120;
+  background-image:
+    linear-gradient(rgba(31, 15, 9, 0.509), rgba(0, 0, 0, 0.3)),
+    url("../images/header.png");
+  background-position: center, center 8%;
+  background-repeat: no-repeat;
+  background-size: 100% 100%, 120% auto;
+}
+
+body.database-page #root > header {
+  background: transparent;
+}
