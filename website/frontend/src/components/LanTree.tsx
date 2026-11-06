@@ -1499,7 +1499,9 @@ export default function LanTree() {
     initialJobId ? "waiting" : "upload",
   )
   const [jobData, setJobData] = useState<JobData | null>(() =>
-    initialJobId ? { jobId: initialJobId, email: "" } : null,
+    initialJobId
+      ? { jobId: initialJobId, email: "", useProdigal: false }
+      : null,
   )
   const [resultFilename, setResultFilename] = useState("nif_clusters.csv")
 
