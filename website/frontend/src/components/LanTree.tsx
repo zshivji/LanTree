@@ -2,7 +2,6 @@ import type { CSSProperties } from "react"
 import { useEffect, useRef, useState } from "react"
 
 const API_BASE = `${import.meta.env.VITE_API_URL}/api/v1`
-const RESULTS_TABLE_FILENAME = "nif_final.csv"
 const UPLOAD_CHUNK_SIZE = 25 * 1024 * 1024
 
 const theme = {
@@ -365,12 +364,18 @@ interface UploadPageProps {
 interface WaitingPageProps {
   jobId: string
   onSuccess: (resultFilename: string) => void
+  onNoResults: () => void
   onFailure: (errorMessage: string | null) => void
 }
 
 interface ResultsPageProps {
   jobId: string
   resultFilename: string
+  onReset: () => void
+}
+
+interface NoResultsPageProps {
+  jobId: string
   onReset: () => void
 }
 
@@ -977,7 +982,7 @@ function UploadPage({ onSubmit }: UploadPageProps) {
 }
 
 // --- Waiting page ---
-function WaitingPage({ jobId, onSuccess, onFailure }: WaitingPageProps) {
+function WaitingPage({ jobId, onSuccess, onNoResults, onFailure }: WaitingPageProps) {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [jobStatus, setJobStatus] = useState("checking")
@@ -996,7 +1001,11 @@ function WaitingPage({ jobId, onSuccess, onFailure }: WaitingPageProps) {
           const data = (await res.json()) as JobStatusResponse
           setJobStatus(data.status)
           if (data.status === "complete") {
-            onSuccess(data.result_filename ?? "nif_clusters.csv")
+            if (data.result_filename) {
+              onSuccess(data.result_filename)
+            } else {
+              onNoResults()
+            }
           }
           if (data.status === "failed") onFailure(data.error_message ?? null)
         } else if (res.status === 404) {
@@ -1102,7 +1111,7 @@ function WaitingPage({ jobId, onSuccess, onFailure }: WaitingPageProps) {
 }
 
 // --- Results page ---
-function ResultsPage({ jobId, onReset }: ResultsPageProps) {
+function ResultsPage({ jobId, resultFilename, onReset }: ResultsPageProps) {
   const [results, setResults] = useState<ResultsData | null>(null)
   const [operonMetadata, setOperonMetadata] = useState<Record<
     string,
@@ -1117,7 +1126,7 @@ function ResultsPage({ jobId, onReset }: ResultsPageProps) {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(resultDownloadUrl(jobId, RESULTS_TABLE_FILENAME))
+        const res = await fetch(resultDownloadUrl(jobId, resultFilename))
         if (!res.ok) {
           throw new Error(`HTTP ${res.status} ${res.statusText}`)
         }
@@ -1148,7 +1157,7 @@ function ResultsPage({ jobId, onReset }: ResultsPageProps) {
     }
 
     void loadResults()
-  }, [jobId])
+  }, [jobId, resultFilename])
 
   const visibleHeaders = results?.headers ?? []
   const visibleColumnIndexes = visibleHeaders
@@ -1383,6 +1392,48 @@ function ResultsPage({ jobId, onReset }: ResultsPageProps) {
   )
 }
 
+function NoResultsPage({ jobId, onReset }: NoResultsPageProps) {
+  return (
+    <div style={styles.main}>
+      <CitingBanner />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: "14px",
+          marginBottom: "28px",
+        }}
+      >
+        <h1 style={{ ...styles.h1, marginBottom: 0 }}>Job completed</h1>
+        <span
+          style={{
+            fontSize: "12px",
+            color: theme.textMuted,
+            fontFamily: "monospace",
+          }}
+        >
+          {jobId}
+        </span>
+      </div>
+
+      <div style={styles.card}>
+        <div style={alertStyle("info")}>
+          No matching nitrogenase sequences were found, so there are no results
+          to display for this job.
+        </div>
+        <p style={{ color: theme.textDim, fontSize: "13px", whiteSpace: "normal" }}>
+          You can submit another FASTA file if you expected this input to
+          contain nitrogenase sequences.
+        </p>
+      </div>
+
+      <button style={styles.btn} onClick={onReset}>
+        ← Submit another job
+      </button>
+    </div>
+  )
+}
+
 // --- Failure page ---
 function FailurePage({ jobId, errorMessage, onReset }: FailurePageProps) {
   return (
@@ -1472,7 +1523,7 @@ function FailurePage({ jobId, errorMessage, onReset }: FailurePageProps) {
 }
 
 // --- App shell ---
-type View = "upload" | "waiting" | "results" | "failure"
+type View = "upload" | "waiting" | "results" | "no-results" | "failure"
 
 
 export default function LanTree() {
@@ -1558,11 +1609,15 @@ export default function LanTree() {
             setResultFilename(filename)
             setView("results")
           }}
+          onNoResults={() => setView("no-results")}
           onFailure={(message) => {
             setErrorMessage(message)
             setView("failure")
           }}
         />
+      )}
+      {view === "no-results" && (
+        <NoResultsPage jobId={jobData?.jobId ?? ""} onReset={handleReset} />
       )}
       {view === "results" && (
         <ResultsPage

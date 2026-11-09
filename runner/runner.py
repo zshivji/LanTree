@@ -20,6 +20,10 @@ REFERENCE_INPUT_BYTES = 2_004_971
 REFERENCE_ELAPSED_SECONDS = 106
 
 
+class NoResultsFound(RuntimeError):
+    """Raised when analysis completes successfully without any matching hits."""
+
+
 def slurm_resources(input_bytes: int) -> dict[str, str]:
     """Estimate a bounded Slurm request from the downloaded input size."""
     reference_bytes = int(os.environ.get(
@@ -268,7 +272,7 @@ def run_slurm(
     )
     if completed.returncode:
         if completed.returncode == 3:
-            raise RuntimeError("Job completed, no results found")
+            raise NoResultsFound
 
         details = (completed.stderr or completed.stdout or "").strip()
         log_files = sorted(log_dir.glob("*"))
@@ -364,6 +368,9 @@ def process(job: dict) -> None:
     except subprocess.CalledProcessError as e:
         mark(job_id, "failed", str(e))
         log.exception("[%s] tool failed: %s", job_id, e)
+    except NoResultsFound:
+        mark(job_id, "complete")
+        log.info("[%s] complete: no results found", job_id)
     except Exception as e:
         mark(job_id, "failed", str(e))
         log.exception("[%s] unexpected error: %s", job_id, e)
