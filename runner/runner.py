@@ -29,7 +29,7 @@ def slurm_resources(input_bytes: int) -> dict[str, str]:
         "LANTREE_REFERENCE_ELAPSED_SECONDS", str(REFERENCE_ELAPSED_SECONDS)
     ))
     safety_factor = float(os.environ.get("LANTREE_RESOURCE_SAFETY_FACTOR", "3"))
-    minimum_minutes = int(os.environ.get("LANTREE_MIN_TIME_MINUTES", "10"))
+    minimum_minutes = int(os.environ.get("LANTREE_MIN_TIME_MINUTES", "20"))
     maximum_minutes = int(os.environ.get("LANTREE_MAX_TIME_MINUTES", "240"))
     maximum_cpus = int(os.environ.get("LANTREE_MAX_CPUS", "4"))
     minimum_memory_gb = int(os.environ.get("LANTREE_MIN_MEMORY_GB", "16"))
@@ -242,13 +242,13 @@ def run_slurm(
         resources["cpus"],
         resources["memory"],
     )
-    subprocess.run(
+    completed = subprocess.run(
         [
             "sbatch",
             "--wait",
             "--parsable",
             "--job-name",
-            f"diazodb_{job_id[:8]}",
+            f"lantree_{job_id[:8]}",
             "--time",
             resources["time"],
             "--cpus-per-task",
@@ -261,9 +261,28 @@ def run_slurm(
             export_vars,
             SLURM_SCRIPT,
         ],
-        check=True,
+        check=False,
+        capture_output=True,
+        text=True,
         timeout=int(os.environ.get("SLURM_WAIT_TIMEOUT_SECONDS", "32400")),
     )
+    if completed.returncode:
+        if completed.returncode == 3:
+            raise RuntimeError("Job completed, no results found")
+
+        details = (completed.stderr or completed.stdout or "").strip()
+        log_files = sorted(log_dir.glob("*"))
+        for log_file in log_files:
+            if log_file.is_file():
+                log_text = log_file.read_text(encoding="utf-8", errors="replace").strip()
+                if log_text:
+                    details = f"{details}\n{log_text}".strip()
+        if len(details) > 4000:
+            details = details[-4000:]
+        message = f"Slurm job failed with exit code {completed.returncode}"
+        if details:
+            message += f": {details}"
+        raise RuntimeError(message)
 
 
 def run_analysis(

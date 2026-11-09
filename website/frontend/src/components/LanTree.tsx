@@ -245,7 +245,7 @@ const styles: Record<string, CSSProperties> = {
     color: theme.textMuted,
     marginBottom: "12px",
     lineHeight: 1.4,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   },
   row: {
     display: "grid",
@@ -365,7 +365,7 @@ interface UploadPageProps {
 interface WaitingPageProps {
   jobId: string
   onSuccess: (resultFilename: string) => void
-  onFailure: () => void
+  onFailure: (errorMessage: string | null) => void
 }
 
 interface ResultsPageProps {
@@ -376,6 +376,7 @@ interface ResultsPageProps {
 
 interface FailurePageProps {
   jobId: string
+  errorMessage: string | null
   onReset: () => void
 }
 
@@ -392,6 +393,7 @@ interface JobStatusResponse {
     | "complete"
     | "failed"
   result_filename?: string | null
+  error_message?: string | null
 }
 
 interface ResultsData {
@@ -996,7 +998,7 @@ function WaitingPage({ jobId, onSuccess, onFailure }: WaitingPageProps) {
           if (data.status === "complete") {
             onSuccess(data.result_filename ?? "nif_clusters.csv")
           }
-          if (data.status === "failed") onFailure()
+          if (data.status === "failed") onFailure(data.error_message ?? null)
         } else if (res.status === 404) {
           setJobStatus("not found")
         }
@@ -1382,7 +1384,7 @@ function ResultsPage({ jobId, onReset }: ResultsPageProps) {
 }
 
 // --- Failure page ---
-function FailurePage({ jobId, onReset }: FailurePageProps) {
+function FailurePage({ jobId, errorMessage, onReset }: FailurePageProps) {
   return (
     <div style={styles.main}>
       <div
@@ -1408,8 +1410,11 @@ function FailurePage({ jobId, onReset }: FailurePageProps) {
       </div>
 
       <div style={alertStyle("error")}>
-        An error occurred while running your job. Please check that your input
-        is valid FASTA format. If the error persists, contact{" "}
+        <div style={{ marginBottom: "8px" }}>
+          {errorMessage ?? "An error occurred while running your job."}
+        </div>
+        Please check that your input is valid FASTA format. If the error
+        persists, contact{" "}
         <a
           href={`mailto:lantree@caltech.edu?subject=LanTree Error: ${jobId}`}
           style={{ color: theme.red }}
@@ -1504,9 +1509,11 @@ export default function LanTree() {
       : null,
   )
   const [resultFilename, setResultFilename] = useState("nif_clusters.csv")
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const handleSubmit = (data: JobData) => {
     setJobData(data)
+    setErrorMessage(null)
     setResultFilename("nif_clusters.csv")
     setJobUrl(data.jobId)
     setView("waiting")
@@ -1514,6 +1521,7 @@ export default function LanTree() {
 
   const handleReset = () => {
     setJobData(null)
+    setErrorMessage(null)
     setResultFilename("nif_clusters.csv")
     setJobUrl(null)
     setView("upload")
@@ -1550,7 +1558,10 @@ export default function LanTree() {
             setResultFilename(filename)
             setView("results")
           }}
-          onFailure={() => setView("failure")}
+          onFailure={(message) => {
+            setErrorMessage(message)
+            setView("failure")
+          }}
         />
       )}
       {view === "results" && (
@@ -1563,6 +1574,7 @@ export default function LanTree() {
       {view === "failure" && (
         <FailurePage
           jobId={jobData?.jobId ?? ""}
+          errorMessage={errorMessage}
           onReset={handleReset}
         />
       )}

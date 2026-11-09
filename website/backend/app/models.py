@@ -78,6 +78,7 @@ class JobPublic(SQLModel):
     file_size_bytes: int | None
     bytes_received: int
     status: JobStatus
+    error_message: str | None = None
     email_status: str | None = None
     created_at: datetime
 

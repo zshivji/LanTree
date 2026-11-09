@@ -63,6 +63,7 @@ class PublicJobPublic(SQLModel):
     file_size_bytes: int | None
     status: JobStatus
     result_filename: str | None = None
+    error_message: str | None = None
 
 
 ORCID_PATTERN = re.compile(r"^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")

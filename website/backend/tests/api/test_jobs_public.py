@@ -3,7 +3,7 @@
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
-from app.models import Contributor, Job
+from app.models import Contributor, Job, JobStatus
 
 
 def test_public_job_records_database_consent_and_orcid(
@@ -60,3 +60,15 @@ def test_public_contributors_returns_unique_orcids(client: TestClient, db: Sessi
 
     assert response.status_code == 200
     assert response.json() == ["0000-0000-0000-0001", "0000-0000-0000-0002"]
+
+
+def test_public_job_status_includes_failure_message(client: TestClient, db: Session, job):
+    job.status = JobStatus.failed
+    job.error_message = "Job completed, no results found"
+    db.add(job)
+    db.commit()
+
+    response = client.get(f"/api/v1/classify/{job.id}")
+
+    assert response.status_code == 200
+    assert response.json()["error_message"] == "Job completed, no results found"

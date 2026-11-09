@@ -106,6 +106,11 @@ python parse_hmm.py \
   --refine \
   --min_genes 1
 
+if ! awk 'NR > 1 { found = 1; exit } END { exit(found ? 0 : 1) }' "$JOB_PARSED_HITS"; then
+  echo "Job completed, no results found" >&2
+  exit 3
+fi
+
 # Run conserved-residue classification entirely within this job's directories.
 if python conserved_res.py \
   --hits_file "$JOB_PARSED_HITS" \
@@ -138,7 +143,7 @@ OPERON_METADATA="$FINAL_DIR/operon_metadata.json"
 OPERON_CLUSTERS="$FINAL_DIR/pqq_operons.csv"
 FINAL_CSV="$FINAL_DIR/pqq_final.csv"
 
-log "Preparing operon FASTA inputs in $OPERON_INPUT_DIR"
+echo "Preparing operon FASTA inputs in $OPERON_INPUT_DIR"
 mkdir -p "$OPERON_INPUT_DIR" "$OPERON_ANNOT_DIR"
 if [[ -s "$OPERON_CLUSTERS" && -s "$FINAL_CSV" ]]; then
   (
@@ -161,7 +166,7 @@ if [[ -s "$OPERON_CLUSTERS" && -s "$FINAL_CSV" ]]; then
       exit 2
     fi
 
-    log "Annotating ${#OPERON_INPUTS[@]} operon neighborhoods"
+    echo "Annotating ${#OPERON_INPUTS[@]} operon neighborhoods"
     microbeannotator \
       --input "${OPERON_INPUTS[@]}" \
       --outdir "$OPERON_ANNOT_DIR" \
@@ -182,10 +187,10 @@ if [[ -s "$OPERON_CLUSTERS" && -s "$FINAL_CSV" ]]; then
         --metadata_file "$OPERON_METADATA"
     )
   else
-    log "No candidate operons found; skipping operon diagram"
+    echo "No candidate operons found; skipping operon diagram"
   fi
 else
-  log "No nif result tables found; skipping operon diagram"
+  echo "No nif result tables found; skipping operon diagram"
 fi
 
 # show identified nif genes on nifH reference tree

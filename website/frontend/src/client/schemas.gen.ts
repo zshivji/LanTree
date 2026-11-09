@@ -241,6 +241,17 @@ export const JobPublicSchema = {
         status: {
             '$ref': '#/components/schemas/JobStatus'
         },
+        error_message: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error Message'
+        },
         email_status: {
             anyOf: [
                 {
@@ -419,6 +430,17 @@ export const PublicJobPublicSchema = {
                 }
             ],
             title: 'Result Filename'
+        },
+        error_message: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error Message'
         },
         email_status: {
             anyOf: [
