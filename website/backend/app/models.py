@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 
 from pydantic import EmailStr
-from sqlalchemy import JSON, BigInteger, Column, DateTime
+from sqlalchemy import JSON, BigInteger, Column, DateTime, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -41,6 +41,7 @@ class Job(SQLModel, table=True):
     use_prodigal: bool = Field(default=False)
     include_in_database: bool = Field(default=False)
     orcid: str | None = Field(default=None, max_length=19)
+    database_key: str = Field(default="LanTree", max_length=64, index=True)
     error_message: str | None = None
     email_status: str | None = None
     created_at: datetime = Field(default_factory=get_datetime_utc)
@@ -48,8 +49,11 @@ class Job(SQLModel, table=True):
 
 
 class Contributor(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("database_key", "orcid"),)
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    orcid: str = Field(max_length=19, unique=True, index=True)
+    database_key: str = Field(default="LanTree", max_length=64, index=True)
+    orcid: str = Field(max_length=19, index=True)
     created_at: datetime = Field(default_factory=get_datetime_utc)
 
 
@@ -59,6 +63,7 @@ class UserDatabaseRecord(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     job_id: uuid.UUID = Field(foreign_key="job.id", index=True)
     row_number: int
+    database_key: str = Field(default="LanTree", max_length=64, index=True)
     provenance: str = Field(default="USER_UPLOAD", max_length=32, index=True)
     orcid: str | None = Field(default=None, max_length=19)
     data: dict[str, str] = Field(

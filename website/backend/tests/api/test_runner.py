@@ -253,6 +253,24 @@ def test_runner_post_opted_in_result_adds_user_database_records(
         }
     ]
 
+    db.add(
+        UserDatabaseRecord(
+            job_id=job.id,
+            row_number=2,
+            database_key="DiazoDB",
+            data={"GenomeID": "other-database"},
+        )
+    )
+    db.commit()
+    assert client.get("/api/v1/database/user-records").json() == [
+        {
+            "GenomeID": "uploaded-genome",
+            "Organism": "Uploaded organism",
+            "cluster": "1",
+            "Provenance": "USER_UPLOAD",
+        }
+    ]
+
 
 def test_runner_post_result_reports_email_failure(
     client, runner_headers, job, db, monkeypatch, tmp_path

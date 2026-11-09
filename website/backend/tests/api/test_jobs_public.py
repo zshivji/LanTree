@@ -62,6 +62,23 @@ def test_public_contributors_returns_unique_orcids(client: TestClient, db: Sessi
     assert response.json() == ["0000-0000-0000-0001", "0000-0000-0000-0002"]
 
 
+def test_public_contributors_excludes_other_databases(
+    client: TestClient, db: Session
+):
+    db.add_all(
+        [
+            Contributor(database_key="LanTree", orcid="0000-0000-0000-0001"),
+            Contributor(database_key="DiazoDB", orcid="0000-0000-0000-0002"),
+        ]
+    )
+    db.commit()
+
+    response = client.get("/api/v1/classify/contributors")
+
+    assert response.status_code == 200
+    assert response.json() == ["0000-0000-0000-0001"]
+
+
 def test_public_job_status_includes_failure_message(client: TestClient, db: Session, job):
     job.status = JobStatus.failed
     job.error_message = "Job completed, no results found"

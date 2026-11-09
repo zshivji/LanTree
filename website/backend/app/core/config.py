@@ -51,6 +51,9 @@ class Settings(BaseSettings):
         ]
 
     PROJECT_NAME: str = "DiazoDB"
+    # Isolates contributor and user-submitted database records when multiple
+    # database sites use the same PostgreSQL service.
+    DATABASE_KEY: str = "LanTree"
     SENTRY_DSN: HttpUrl | None = None
 
     # ── Postgres ─────────────────────────────────────────────

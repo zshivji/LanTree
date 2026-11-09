@@ -1222,16 +1222,16 @@ function ResultsPage({ jobId, resultFilename, onReset }: ResultsPageProps) {
             <button
               style={styles.btn}
               onClick={() =>
-                window.open(resultDownloadUrl(jobId, "nif_clusters.csv"), "_blank")}
+                window.open(resultDownloadUrl(jobId, "pqq_operons.csv"), "_blank")}
             >
-              Download CSV (nif_clusters.csv) ↓
+              Download CSV (pqq_clusters.csv) ↓
             </button>
             <button
               style={styles.btn}
               onClick={() =>
-                window.open(resultDownloadUrl(jobId, "nif_final.csv"), "_blank")}
+                window.open(resultDownloadUrl(jobId, "pqq_final.csv"), "_blank")}
             >
-              Download CSV (nif_final.csv) ↓
+              Download CSV (pqq_final.csv) ↓
             </button>
             <div style={{ position: "relative" }}>
               <button
@@ -1266,7 +1266,7 @@ function ResultsPage({ jobId, resultFilename, onReset }: ResultsPageProps) {
                     fastaGenes.map((gene) => (
                       <a
                         key={gene}
-                        href={resultDownloadUrl(jobId, `final_${gene}.fasta`)}
+                        href={resultDownloadUrl(jobId, `${gene}.fasta`)}
                         download
                         role="menuitem"
                         onClick={() => setFastaMenuOpen(false)}
@@ -1559,13 +1559,13 @@ export default function LanTree() {
       ? { jobId: initialJobId, email: "", useProdigal: false }
       : null,
   )
-  const [resultFilename, setResultFilename] = useState("nif_clusters.csv")
+  const [resultFilename, setResultFilename] = useState("pqq_operons.csv")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const handleSubmit = (data: JobData) => {
     setJobData(data)
     setErrorMessage(null)
-    setResultFilename("nif_clusters.csv")
+    setResultFilename("pqq_operons.csv")
     setJobUrl(data.jobId)
     setView("waiting")
   }
@@ -1573,7 +1573,7 @@ export default function LanTree() {
   const handleReset = () => {
     setJobData(null)
     setErrorMessage(null)
-    setResultFilename("nif_clusters.csv")
+    setResultFilename("pqq_operons.csv")
     setJobUrl(null)
     setView("upload")
   }

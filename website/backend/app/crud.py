@@ -4,6 +4,7 @@ from typing import Any
 
 from sqlmodel import Session, select
 
+from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
     Item,
@@ -80,7 +81,13 @@ def create_item(*, session: Session, item_in: ItemCreate, owner_id: uuid.UUID) -
 
 
 def create_job(*, session: Session, job_in: JobCreate, owner_id: uuid.UUID) -> Job:
-    job = Job.model_validate({**job_in.model_dump(), "owner_id": owner_id})
+    job = Job.model_validate(
+        {
+            **job_in.model_dump(),
+            "owner_id": owner_id,
+            "database_key": settings.DATABASE_KEY,
+        }
+    )
     session.add(job)
     session.commit()
     session.refresh(job)

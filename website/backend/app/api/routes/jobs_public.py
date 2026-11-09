@@ -81,18 +81,25 @@ def _validate_orcid(orcid: str | None) -> None:
 
 def _record_contributor(session: Session, orcid: str | None) -> None:
     if not orcid or session.exec(
-        select(Contributor).where(Contributor.orcid == orcid)
+        select(Contributor).where(
+            Contributor.database_key == settings.DATABASE_KEY,
+            Contributor.orcid == orcid,
+        )
     ).first():
         return
-    session.add(Contributor(orcid=orcid))
+    session.add(Contributor(database_key=settings.DATABASE_KEY, orcid=orcid))
 
 
 @router.get("/contributors", response_model=list[str])
 def get_contributors(session: Session = Depends(get_db)) -> list[str]:
-    """Return the public ORCID identifiers contributed through DiazoDB."""
+    """Return ORCID identifiers contributed to this database site."""
     return sorted(
         contributor.orcid
-        for contributor in session.exec(select(Contributor)).all()
+        for contributor in session.exec(
+            select(Contributor).where(
+                Contributor.database_key == settings.DATABASE_KEY
+            )
+        ).all()
     )
 
 
@@ -136,6 +143,7 @@ async def create_public_job(
         use_prodigal=job_in.use_prodigal,
         include_in_database=job_in.include_in_database,
         orcid=job_in.orcid,
+        database_key=settings.DATABASE_KEY,
     )
     session.add(job)
     session.commit()

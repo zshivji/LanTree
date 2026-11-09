@@ -196,6 +196,7 @@ def post_result(
                 UserDatabaseRecord(
                     job_id=job.id,
                     row_number=row_number,
+                    database_key=job.database_key,
                     orcid=job.orcid,
                     data={key: value or "" for key, value in row.items()},
                 )

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 
 from app.api.deps import get_db
+from app.core.config import settings
 from app.models import UserDatabaseRecord
 
 router = APIRouter(prefix="/database", tags=["database"])
@@ -12,8 +13,8 @@ router = APIRouter(prefix="/database", tags=["database"])
 @router.get("/user-records", response_model=list[dict[str, str]])
 def get_user_records(session: Session = Depends(get_db)) -> list[dict[str, str]]:
     records = session.exec(
-        select(UserDatabaseRecord).order_by(
-            UserDatabaseRecord.created_at, UserDatabaseRecord.row_number
-        )
+        select(UserDatabaseRecord)
+        .where(UserDatabaseRecord.database_key == settings.DATABASE_KEY)
+        .order_by(UserDatabaseRecord.created_at, UserDatabaseRecord.row_number)
     ).all()
     return [{**record.data, "Provenance": record.provenance} for record in records]
