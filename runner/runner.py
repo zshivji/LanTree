@@ -271,9 +271,6 @@ def run_slurm(
         timeout=int(os.environ.get("SLURM_WAIT_TIMEOUT_SECONDS", "32400")),
     )
     if completed.returncode:
-        if completed.returncode == 3:
-            raise NoResultsFound
-
         details = (completed.stderr or completed.stdout or "").strip()
         log_files = sorted(log_dir.glob("*"))
         for log_file in log_files:
@@ -281,6 +278,13 @@ def run_slurm(
                 log_text = log_file.read_text(encoding="utf-8", errors="replace").strip()
                 if log_text:
                     details = f"{details}\n{log_text}".strip()
+        if (
+            completed.returncode == 3
+            or "Job completed, no results found" in details
+            or "No hits passed the conserved-residue check" in details
+        ):
+            raise NoResultsFound
+
         if len(details) > 4000:
             details = details[-4000:]
         message = f"Slurm job failed with exit code {completed.returncode}"
