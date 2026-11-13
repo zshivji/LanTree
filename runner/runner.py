@@ -102,6 +102,7 @@ def mark(job_id: str, status: str, error: str = "") -> dict:
 def push_results(job_id: str, result_paths: list[Path]) -> dict:
     content_types = {
         ".csv": "text/csv",
+        ".tsv": "text/tab-separated-values",
         ".fa": "text/plain",
         ".faa": "text/plain",
         ".fasta": "text/plain",
@@ -357,7 +358,13 @@ def process(job: dict) -> None:
             raise FileNotFoundError(
                 f"Expected at least one CSV result in {result_path}, but none was created"
             )
-        result_paths = [*result_csv_paths, *fasta_paths, operon_metadata_path]
+        result_tsv_paths = sorted(result_path.glob("*.tsv"))
+        result_paths = [
+            *result_csv_paths,
+            *result_tsv_paths,
+            *fasta_paths,
+            operon_metadata_path,
+        ]
         missing = [path for path in result_paths if not path.exists()]
         if missing:
             raise FileNotFoundError(
