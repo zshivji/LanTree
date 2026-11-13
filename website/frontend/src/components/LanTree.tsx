@@ -30,7 +30,7 @@ const styles: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     fontFamily: "Lato, system-ui, sans-serif",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
   },
   header: {
     backgroundColor: "#293120",
@@ -118,7 +118,7 @@ const styles: Record<string, CSSProperties> = {
     width: "100%",
   },
   h1: {
-    fontSize: "clamp(2rem, 4vw, 3.25rem)",
+    fontSize: "clamp(1.25rem, 3vw, 2.5rem)",
     fontWeight: 700,
     color: theme.text,
     margin: "0 0 4px",
@@ -130,7 +130,8 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.4,
     margin: "0 0 12px",
     maxWidth: "none",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
   },
   card: {
     background: theme.bgCard,
@@ -154,7 +155,8 @@ const styles: Record<string, CSSProperties> = {
     color: theme.textDim,
     marginBottom: "8px",
     fontWeight: 700,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
   },
   input: {
     width: "100%",
@@ -204,12 +206,14 @@ const styles: Record<string, CSSProperties> = {
     gap: "10px",
     marginBottom: "12px",
     cursor: "pointer",
+    minWidth: 0,
   },
   checkboxLabel: {
     fontSize: "13px",
     color: theme.textDim,
     lineHeight: 1.5,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
   },
   btn: {
     background: theme.green,
@@ -240,11 +244,12 @@ const styles: Record<string, CSSProperties> = {
     border: `1px solid rgba(119,108,77,0.28)`,
     borderRadius: "6px",
     padding: "9px 14px",
-    fontSize: "12px",
+    fontSize: "15px",
     color: theme.textMuted,
     marginBottom: "12px",
     lineHeight: 1.4,
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
   },
   row: {
     display: "grid",
@@ -273,7 +278,8 @@ const styles: Record<string, CSSProperties> = {
     color: theme.textDim,
     lineHeight: 1.4,
     margin: "0 0 8px",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
   },
   statusBox: {
     textAlign: "center",
@@ -333,7 +339,8 @@ function alertStyle(type: "info" | "warn" | "error"): CSSProperties {
           : theme.red,
     marginBottom: "12px",
     lineHeight: 1.4,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
   }
 }
 
@@ -365,7 +372,7 @@ interface WaitingPageProps {
   jobId: string
   onSuccess: (resultFilename: string) => void
   onNoResults: () => void
-  onFailure: (errorMessage: string | null) => void
+  onFailure: () => void
 }
 
 interface ResultsPageProps {
@@ -381,7 +388,6 @@ interface NoResultsPageProps {
 
 interface FailurePageProps {
   jobId: string
-  errorMessage: string | null
   onReset: () => void
 }
 
@@ -424,6 +430,49 @@ interface OperonMetadata {
     region_end?: number | string | null
     genes?: OperonGene[]
   } | null
+}
+
+const RESULT_COLUMNS = [
+  { label: "Genome ID", headers: ["GenomeID", "Genome ID", "genome_id"] },
+  { label: "Contig", headers: ["contig", "Contig"] },
+  { label: "Location", headers: ["Location"] },
+  {
+    label: "Sequence Length",
+    headers: ["Sequence Length", "SequenceLength", "sequence_length"],
+  },
+  { label: "Orientation", headers: ["Orientation", "direction"] },
+  { label: "Metal Dependence", headers: ["LDE"] },
+  { label: "Group", headers: ["Group"] },
+] as const
+
+function normalizeResultHeader(value: string) {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, "")
+}
+
+function metalDependenceLabel(value: string | undefined) {
+  const normalizedValue = value?.trim()
+  if (!normalizedValue) return ""
+
+  const numericValue = Number(normalizedValue)
+  if (numericValue === 1) return "Ln"
+  if (numericValue === 0) return "Ca"
+  return ""
+}
+
+function metalDependenceStyle(value: "Ln" | "Ca"): CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: "20px",
+    padding: "0 8px",
+    borderRadius: "4px",
+    fontSize: "12px",
+    lineHeight: 1.2,
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+    color: value === "Ln" ? "#52236f" : "#174f55",
+    background: value === "Ln" ? "#eadcf4" : "#d8eef0",
+  }
 }
 
 const GENE_COLORS: Record<string, string> = {
@@ -872,7 +921,16 @@ function UploadPage({ onSubmit }: UploadPageProps) {
                 onChange={(e) => handleFile(e.target.files?.[0])}
               />
               {fileName ? (
-                <span style={{ color: theme.green, fontSize: "13px" }}>
+                <span
+                  style={{
+                    color: theme.green,
+                    display: "inline-block",
+                    fontSize: "13px",
+                    maxWidth: "100%",
+                    overflowWrap: "anywhere",
+                    whiteSpace: "normal",
+                  }}
+                >
                   ✓ {fileName}
                 </span>
               ) : (
@@ -1007,7 +1065,18 @@ function WaitingPage({ jobId, onSuccess, onNoResults, onFailure }: WaitingPagePr
               onNoResults()
             }
           }
-          if (data.status === "failed") onFailure(data.error_message ?? null)
+          if (data.status === "failed") {
+            const failureMessage = data.error_message?.trim() ?? null
+            const isNoResults =
+              failureMessage !== null &&
+              /no\s+(?:matching\s+)?(?:hits?|results?)\b/i.test(failureMessage)
+
+            if (isNoResults) {
+              onNoResults()
+            } else {
+              onFailure()
+            }
+          }
         } else if (res.status === 404) {
           setJobStatus("not found")
         }
@@ -1160,9 +1229,15 @@ function ResultsPage({ jobId, resultFilename, onReset }: ResultsPageProps) {
   }, [jobId, resultFilename])
 
   const visibleHeaders = results?.headers ?? []
-  const visibleColumnIndexes = visibleHeaders
-    .map((header, index) => ({ header, index }))
-    .filter(({ header }) => header.trim().toLowerCase() !== "operon")
+  const visibleColumns = RESULT_COLUMNS.map((column) => ({
+    ...column,
+    index: visibleHeaders.findIndex((header) =>
+      column.headers.some(
+        (candidate) =>
+          normalizeResultHeader(candidate) === normalizeResultHeader(header),
+      ),
+    ),
+  }))
   const geneColumnIndex = visibleHeaders.findIndex(
     (header) => header.trim().toLowerCase() === "gene",
   )
@@ -1193,7 +1268,7 @@ function ResultsPage({ jobId, resultFilename, onReset }: ResultsPageProps) {
           display: "flex",
           alignItems: "baseline",
           gap: "14px",
-          marginBottom: "28px",
+          marginBottom: "14px",
         }}
       >
         <h1 style={{ ...styles.h1, marginBottom: 0 }}>Results</h1>
@@ -1217,21 +1292,21 @@ function ResultsPage({ jobId, resultFilename, onReset }: ResultsPageProps) {
             marginBottom: "20px",
           }}
         >
-          <div style={styles.cardTitle}>Classification Results</div>
+          <div style={styles.cardTitle}>Annotation Results</div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "nowrap" }}>
-            <button
+            {/* <button
               style={styles.btn}
               onClick={() =>
-                window.open(resultDownloadUrl(jobId, "pqq_operons.csv"), "_blank")}
+                window.open(resultDownloadUrl(jobId, "operons.csv"), "_blank")}
             >
               Download CSV (pqq_clusters.csv) ↓
-            </button>
+            </button> */}
             <button
               style={styles.btn}
               onClick={() =>
-                window.open(resultDownloadUrl(jobId, "pqq_final.csv"), "_blank")}
+                window.open(resultDownloadUrl(jobId, "final.csv"), "_blank")}
             >
-              Download CSV (pqq_final.csv) ↓
+              Download CSV (final.csv) ↓
             </button>
             <div style={{ position: "relative" }}>
               <button
@@ -1309,16 +1384,13 @@ function ResultsPage({ jobId, resultFilename, onReset }: ResultsPageProps) {
         )}
         {!loading && !error && results && results.rows.length > 0 && (
           <>
-            <div style={{ ...styles.cardTitle, color: theme.textMuted }}>
-              Classification output
-            </div>
             <div style={{ overflowX: "auto" }}>
               <table style={styles.table}>
                 <thead>
                   <tr>
-                    {visibleColumnIndexes.map(({ header, index }) => (
-                      <th key={`${header}-${index}`} style={styles.th}>
-                        {header || `Column ${index + 1}`}
+                    {visibleColumns.map(({ label }) => (
+                      <th key={label} style={styles.th}>
+                        {label}
                       </th>
                     ))}
                   </tr>
@@ -1326,11 +1398,30 @@ function ResultsPage({ jobId, resultFilename, onReset }: ResultsPageProps) {
                 <tbody>
                   {results.rows.map((row, rowIndex) => (
                     <tr key={`${row[0] ?? "row"}-${rowIndex}`}>
-                      {visibleColumnIndexes.map(({ index }) => (
-                        <td key={index} style={styles.td}>
-                          {row[index] ?? ""}
-                        </td>
-                      ))}
+                      {visibleColumns.map(({ label, index }) => {
+                        const value = index >= 0 ? row[index] : ""
+                        const metal =
+                          label === "Metal Dependence"
+                            ? metalDependenceLabel(value)
+                            : ""
+
+                        return (
+                          <td key={label} style={styles.td}>
+                            {metal ? (
+                              <span
+                                style={metalDependenceStyle(
+                                  metal as "Ln" | "Ca",
+                                )}
+                                translate="no"
+                              >
+                                {metal}
+                              </span>
+                            ) : (
+                              value ?? ""
+                            )}
+                          </td>
+                        )
+                      })}
                     </tr>
                   ))}
                 </tbody>
@@ -1401,7 +1492,7 @@ function NoResultsPage({ jobId, onReset }: NoResultsPageProps) {
           display: "flex",
           alignItems: "baseline",
           gap: "14px",
-          marginBottom: "28px",
+          marginBottom: "14px",
         }}
       >
         <h1 style={{ ...styles.h1, marginBottom: 0 }}>Job completed</h1>
@@ -1418,12 +1509,11 @@ function NoResultsPage({ jobId, onReset }: NoResultsPageProps) {
 
       <div style={styles.card}>
         <div style={alertStyle("info")}>
-          No matching nitrogenase sequences were found, so there are no results
-          to display for this job.
+          No PQQ dehydrogenase matches.
         </div>
         <p style={{ color: theme.textDim, fontSize: "13px", whiteSpace: "normal" }}>
           You can submit another FASTA file if you expected this input to
-          contain nitrogenase sequences.
+          contain PQQ-dependent dehydrogenase sequences.
         </p>
       </div>
 
@@ -1435,7 +1525,7 @@ function NoResultsPage({ jobId, onReset }: NoResultsPageProps) {
 }
 
 // --- Failure page ---
-function FailurePage({ jobId, errorMessage, onReset }: FailurePageProps) {
+function FailurePage({ jobId, onReset }: FailurePageProps) {
   return (
     <div style={styles.main}>
       <div
@@ -1443,7 +1533,7 @@ function FailurePage({ jobId, errorMessage, onReset }: FailurePageProps) {
           display: "flex",
           alignItems: "baseline",
           gap: "14px",
-          marginBottom: "28px",
+          marginBottom: "14px",
         }}
       >
         <h1 style={{ ...styles.h1, marginBottom: 0, color: theme.red }}>
@@ -1461,9 +1551,7 @@ function FailurePage({ jobId, errorMessage, onReset }: FailurePageProps) {
       </div>
 
       <div style={alertStyle("error")}>
-        <div style={{ marginBottom: "8px" }}>
-          {errorMessage ?? "An error occurred while running your job."}
-        </div>
+        <div style={{ marginBottom: "8px" }}>Job failed.</div>
         Please check that your input is valid FASTA format. If the error
         persists, contact{" "}
         <a
@@ -1484,13 +1572,13 @@ function FailurePage({ jobId, errorMessage, onReset }: FailurePageProps) {
           ],
           [
             "CDS regions not predicted with Prodigal",
-            "Protein/CDS fasta files must be generated with Prodigal.",
+            "Protein/CDS FASTA files must be generated with Prodigal.",
           ],
           [
             "Empty or corrupt file",
             "Try re-exporting your FASTA file and resubmitting.",
           ],
-        ].map(([title, desc]) => (
+        ].map(([title, description]) => (
           <div
             key={title}
             style={{
@@ -1508,8 +1596,14 @@ function FailurePage({ jobId, errorMessage, onReset }: FailurePageProps) {
             >
               {title}
             </div>
-            <div style={{ fontSize: "12px", color: theme.textMuted }}>
-              {desc}
+            <div
+              style={{
+                fontSize: "12px",
+                color: theme.textMuted,
+                whiteSpace: "normal",
+              }}
+            >
+              {description}
             </div>
           </div>
         ))}
@@ -1559,21 +1653,18 @@ export default function LanTree() {
       ? { jobId: initialJobId, email: "", useProdigal: false }
       : null,
   )
-  const [resultFilename, setResultFilename] = useState("pqq_operons.csv")
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [resultFilename, setResultFilename] = useState("operons.csv")
 
   const handleSubmit = (data: JobData) => {
     setJobData(data)
-    setErrorMessage(null)
-    setResultFilename("pqq_operons.csv")
+    setResultFilename("operons.csv")
     setJobUrl(data.jobId)
     setView("waiting")
   }
 
   const handleReset = () => {
     setJobData(null)
-    setErrorMessage(null)
-    setResultFilename("pqq_operons.csv")
+    setResultFilename("operons.csv")
     setJobUrl(null)
     setView("upload")
   }
@@ -1589,11 +1680,11 @@ export default function LanTree() {
             Phylogeny
           </a>
           <a href="/database" style={styles.headerLink}>
-            LanTree
+            Database
           </a>
-          <a href="/classify" style={styles.headerLinkActive}>
+          {/* <a href="/classify" style={styles.headerLinkActive}>
             Upload
-          </a>
+          </a> */}
           <a href="/about" style={styles.headerLink}>
             About
           </a>
@@ -1610,8 +1701,7 @@ export default function LanTree() {
             setView("results")
           }}
           onNoResults={() => setView("no-results")}
-          onFailure={(message) => {
-            setErrorMessage(message)
+          onFailure={() => {
             setView("failure")
           }}
         />
@@ -1629,7 +1719,6 @@ export default function LanTree() {
       {view === "failure" && (
         <FailurePage
           jobId={jobData?.jobId ?? ""}
-          errorMessage={errorMessage}
           onReset={handleReset}
         />
       )}

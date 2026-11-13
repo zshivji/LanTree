@@ -10,10 +10,11 @@ const downloadFastaBtn = document.getElementById("downloadFastaBtn")
 const downloadFastaDropdown = document.querySelector("[data-download-dropdown]")
 const tableSearchInput = document.getElementById("tableSearchInput")
 const tableSearchForm = document.getElementById("tableSearchForm")
-const CSV_PATH = "../results/MDH_genomes.csv"
+const databaseLoading = document.getElementById("databaseLoading")
+const CSV_PATH = "./results/PQQ.csv"
 const USER_RECORDS_PATH = "/api/v1/database/user-records"
 
-const ROW_HEIGHT = 40 // must match CSS .data-row height
+const ROW_HEIGHT = 56 // must match CSS .data-row height
 const BUFFER = 10
 
 let allData = [] // Store all data from CSV
@@ -102,6 +103,16 @@ function organismFromTaxonomy(taxonomy) {
   return ""
 }
 
+function provenanceFromGenomeId(genomeId) {
+  const value = String(genomeId ?? "").trim().toUpperCase()
+  if (value.includes("AFDB")) return "AFDB"
+
+  // GTDB uses RS_/GB_ prefixes for RefSeq/GenBank genomes. Accept GC as
+  // well so unprefixed GCA/GCF accessions receive the same provenance.
+  if (/^(RS|GB|GC)/.test(value)) return "GTDB"
+  return ""
+}
+
 function normalizeDatabaseRow(row, defaultProvenance = "") {
   const taxonomy =
     row["GTDB Taxonomy"] ?? row.gtdb_taxonomy ?? row.GTDB ?? ""
@@ -119,7 +130,8 @@ function normalizeDatabaseRow(row, defaultProvenance = "") {
       row["Isolation Source"] ?? row.ncbi_isolation_source ?? "",
     Organism: row.Organism ?? organismFromTaxonomy(taxonomy),
     MetalDependence: metalDependence,
-    Provenance: row.Provenance ?? defaultProvenance,
+    Provenance:
+      row.Provenance || provenanceFromGenomeId(row.GenomeID ?? row.Genome) || defaultProvenance,
   }
 }
 
@@ -365,7 +377,7 @@ async function downloadCurrentCsv() {
   const blobUrl = URL.createObjectURL(blob)
   const tempLink = document.createElement("a")
   tempLink.href = blobUrl
-  tempLink.download = "MDH_genomes.csv"
+  tempLink.download = "PQQ.csv"
   document.body.appendChild(tempLink)
   tempLink.click()
   tempLink.remove()
@@ -439,13 +451,20 @@ Promise.all([
 ])
   .then(([csvText, userRows]) => {
     const gtdbRows = parseCSVToObjects(csvText).map((row) =>
-      normalizeDatabaseRow(row, "GTDB"),
+      normalizeDatabaseRow(row),
     )
     const normalizedUserRows = userRows.map((row) => normalizeDatabaseRow(row))
-    const rows = [...gtdbRows, ...normalizedUserRows]
+    const rows = [...gtdbRows, ...normalizedUserRows].reverse()
     console.log(`Parsed ${gtdbRows.length} GTDB rows and ${userRows.length} user rows.`)
     allData = rows
     renderTable(rows)
     updateResultCount(rows.length)
+    if (databaseLoading) databaseLoading.hidden = true
   })
-  .catch((error) => console.error("Error loading CSV:", error))
+  .catch((error) => {
+    console.error("Error loading CSV:", error)
+    if (databaseLoading) {
+      databaseLoading.textContent = "Unable to load database records. Please try again."
+      databaseLoading.classList.add("is-error")
+    }
+  })

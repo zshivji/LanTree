@@ -8,19 +8,12 @@ const searchExampleButtons = document.querySelectorAll("[data-search-example]")
 let labelData = []
 let metadataKeyLookup = new Map()
 
-// define colors for each gene
+// define colors for genes commonly found around PQQ-dependent dehydrogenases
 const GENE_COLORS = {
-  nifA: "#c084fc", // purple
-  nifB: "#f472b6", // pink
-  nifH: "#60a5fa", // blue
-  nifD: "#f59e0b", // orange
-  nifK: "#10b981", // green
-  nifE: "#f97316", // amber
-  nifN: "#14b8a6", // teal
-  nifV: "#a3e635", // lime
-  anfG: "#818cf8", // indigo
-  anfO: "#fb7185", // rose
-  vnfG: "#22d3ee", // cyan
+  pqq: "#60a5fa",
+  mxaF: "#f59e0b",
+  xoxF: "#10b981",
+  exaF: "#c084fc",
 }
 
 const DEFAULT_GENE_COLOR = "#9ca3af"
@@ -59,7 +52,20 @@ function normalizeDirection(direction) {
 
 function getGeneColor(geneName) {
   const key = String(geneName || "").trim()
-  return GENE_COLORS[key] || DEFAULT_GENE_COLOR
+  return GENE_COLORS[key] || GENE_COLORS[key.toLowerCase()] || DEFAULT_GENE_COLOR
+}
+
+function normalizePqqIdentifier(value) {
+  const fullValue = String(value || "").trim().replace(/^'+|'+$/g, "")
+  const parts = fullValue.split("|").map((part) => part.trim()).filter(Boolean)
+  const raw = (parts.length > 1 ? parts[parts.length - 1] : fullValue)
+    .replace(/_A$/i, "")
+  if (!raw) return ""
+  if (/^AFDB:/i.test(raw)) return raw.toUpperCase()
+
+  // iTOL writes GTDB protein IDs as contig:gene-number, while the result
+  // table uses contig_gene-number (and occasionally an annotation suffix).
+  return raw.replace(/:(\d+)$/, "_$1").toUpperCase()
 }
 
 function normalizeTreeIdentifier(value) {
@@ -115,6 +121,8 @@ function createMetadataLookup(metadata) {
     addLookupValue(lookup, normalizeTreeIdentifier(key), key)
     addLookupValue(lookup, canonicalLookupKey(key), key)
     addLookupValue(lookup, getGenomeContigLookupKey(key), key)
+    addLookupValue(lookup, normalizePqqIdentifier(key), key)
+    addLookupValue(lookup, normalizePqqIdentifier(metadata[key] && metadata[key].hit), key)
   })
 
   return lookup
@@ -253,6 +261,8 @@ function renderScaleHTML(regionStart, regionEnd) {
 }
 
 function resolveMetadataKey(rawLabel, metadata) {
+  const pqqKey = metadataKeyLookup.get(normalizePqqIdentifier(rawLabel))
+  if (pqqKey && metadata[pqqKey]) return pqqKey
   const rawId = normalizeTreeIdentifier(rawLabel)
   const normalizedPipeKey = normalizeTreeIdentifier(rawId)
 
@@ -305,12 +315,10 @@ function splitTreeLabelText(value) {
     .map((part) => part.trim())
     .filter(Boolean)
 
-  // The first two fields are always the organism and nitrogenase type
-  // (nif/vnf/anf). Everything after them is the metadata ID suffix.
-  if (parts.length >= 3) {
+  if (parts.length >= 2) {
     return {
-      primary: parts.slice(0, 2).join(" | "),
-      secondary: ` | ${parts.slice(2).join(" | ")}`,
+      primary: parts[0],
+      secondary: ` | ${parts.slice(1).join(" | ")}`,
     }
   }
 
@@ -363,16 +371,12 @@ function toSearchText(parts) {
 
 function buildTooltipHTML(id, nodeMeta) {
   const idParts = getTreeIdParts(id)
-  const title = idParts.length >= 2
-    ? `${idParts[0]} | ${idParts[1]}`
-    : normalizeText(nodeMeta.organism || nodeMeta.species || id, id)
+  const title = normalizeText(nodeMeta.organism || nodeMeta.species || nodeMeta.hit || id, id)
   const genome = normalizeText(nodeMeta.genome)
-  const contig = normalizeText(idParts[3])
-  const group = normalizeText(nodeMeta.group)
-  const environments = normalizeEnvironment(
-    nodeMeta.environments || nodeMeta.environment,
-  )
-  const regulon = normalizeText(nodeMeta.regulon)
+  const contig = normalizeText(nodeMeta.contig || idParts[3])
+  const metalDependence = normalizeText(nodeMeta.metal_dependence)
+  const location = normalizeText(nodeMeta.location)
+  const hit = normalizeText(nodeMeta.hit)
   const taxonomy = formatTaxonomy(nodeMeta.taxonomy)
   const operonHtml = SHOW_OPERON_IN_TOOLTIP ? renderOperonHTML(nodeMeta) : ""
 
@@ -387,14 +391,14 @@ function buildTooltipHTML(id, nodeMeta) {
         <div class="tooltip-key">Contig</div>
         <div class="tooltip-value">${escapeHtml(contig)}</div>
 
-        <div class="tooltip-key">Group</div>
-        <div class="tooltip-value">${escapeHtml(group)}</div>
+        <div class="tooltip-key">Sequence</div>
+        <div class="tooltip-value">${escapeHtml(hit)}</div>
 
-        <div class="tooltip-key">Environment</div>
-        <div class="tooltip-value">${escapeHtml(environments)}</div>
+        <div class="tooltip-key">Location</div>
+        <div class="tooltip-value">${escapeHtml(location)}</div>
 
-        <div class="tooltip-key">Regulon</div>
-        <div class="tooltip-value">${escapeHtml(regulon)}</div>
+        <div class="tooltip-key">Metal dependence</div>
+        <div class="tooltip-value">${escapeHtml(metalDependence)}</div>
       </div>
 
       <div class="tooltip-taxonomy-label">Taxonomy</div>
@@ -465,14 +469,14 @@ function positionTooltip(e) {
 // main
 
 if (treeContainer) {
-  const svgUrl = new URL("./images/nifH-tree.svg", window.location.href).href
+  const svgUrl = new URL("./images/LanTree-tree20.svg", window.location.href).href
   const metadataUrl = new URL("./results/metadata.json", window.location.href).href
 
   // load SVG + metadata + leaf labels + add tooltip interactivity
   Promise.all([
     fetch(svgUrl).then((r) => {
       if (!r.ok) {
-        throw new Error(`Failed to load nifH-tree.svg: ${r.status} ${r.statusText}`)
+        throw new Error(`Failed to load LanTree-tree20.svg: ${r.status} ${r.statusText}`)
       }
       return r.text()
     }),
@@ -507,6 +511,11 @@ if (treeContainer) {
           nodeMeta.species,
           nodeMeta.genome,
           nodeMeta.group,
+          nodeMeta.hit,
+          nodeMeta.contig,
+          nodeMeta.location,
+          nodeMeta.metal_dependence,
+          nodeMeta.taxonomy,
           nodeMeta.environments,
           nodeMeta.environment,
           nodeMeta.regulon,
@@ -537,13 +546,13 @@ if (treeContainer) {
       })
 
       label.addEventListener("click", () => {
-        window.location.href = getOrganismDetailUrl(metadata[id].genome)
+        window.location.href = `/organism?id=${encodeURIComponent(id)}`
       })
 
       label.addEventListener("keydown", (e) => {
         if (e.key !== "Enter" && e.key !== " ") return
         e.preventDefault()
-        window.location.href = getOrganismDetailUrl(metadata[id].genome)
+        window.location.href = `/organism?id=${encodeURIComponent(id)}`
       })
     })
 
@@ -551,6 +560,7 @@ if (treeContainer) {
     })
     .catch((error) => {
       console.error("Failed to initialize tree:", error)
+      treeContainer.innerHTML = '<div class="tree-loading is-error" role="alert">Unable to load the phylogenetic tree. Please try again.</div>'
     })
 }
 

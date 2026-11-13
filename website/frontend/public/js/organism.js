@@ -106,12 +106,12 @@ function getEnvironment(nodeMeta) {
     : environment
 }
 
-function getNitrogenaseGenes(records) {
+function getPqqGenes(records) {
   return [...new Set(
     records
       .flatMap(({ meta }) => meta.operon?.genes || [])
       .map((gene) => String(gene.gene_name || "").trim())
-      .filter((geneName) => /^(?:nif|vnf|anf)/i.test(geneName)),
+      .filter(Boolean),
   )]
 }
 
@@ -316,10 +316,10 @@ function renderOrganismPage(records) {
     firstRecord.id,
   )
   const genomes = [...new Set(records.map(({ meta }) => normalizeText(meta.genome)))]
-  const contigs = [...new Set(records.map(({ id }) => getContigFromKey(id)))]
-  const environments = [...new Set(records.map(({ meta }) => getEnvironment(meta)))]
-  const nitrogenaseGenes = getNitrogenaseGenes(records)
-  const regulons = [...new Set(records.map(({ meta }) => normalizeText(meta.regulon)))]
+  const contigs = [...new Set(records.map(({ meta, id }) => normalizeText(meta.contig || getContigFromKey(id))))]
+  const pqqGenes = getPqqGenes(records)
+  const locations = [...new Set(records.map(({ meta }) => normalizeText(meta.location)))]
+  const metalDependence = [...new Set(records.map(({ meta }) => normalizeText(meta.metal_dependence)))]
   const taxonomies = [...new Set(records.map(({ meta }) => formatTaxonomy(meta.taxonomy)))]
 
   document.title = `${organism} - LanTree`
@@ -331,7 +331,7 @@ function renderOrganismPage(records) {
 
     <section class="organism-hero">
       <h1>${escapeHtml(organism)}</h1>
-      <p class="organism-id">${records.length} operon${records.length === 1 ? "" : "s"}</p>
+      <p class="organism-id">${records.length} sequence record${records.length === 1 ? "" : "s"}</p>
     </section>
 
     <section class="organism-summary" aria-label="Organism metadata">
@@ -340,8 +340,8 @@ function renderOrganismPage(records) {
         <strong>${renderSummaryValues(genomes, true)}</strong>
       </div>
       <div>
-        <span>Environment</span>
-        <strong>${renderSummaryValues(environments)}</strong>
+        <span>Metal dependence</span>
+        <strong>${renderSummaryValues(metalDependence)}</strong>
       </div>
       <div>
         <span>Contig</span>
@@ -349,11 +349,11 @@ function renderOrganismPage(records) {
       </div>
       <div>
         <span>Gene set</span>
-        <strong>${renderSummaryValues(nitrogenaseGenes)}</strong>
+        <strong>${renderSummaryValues(pqqGenes)}</strong>
       </div>
       <div>
-        <span>Regulon</span>
-        <strong>${renderSummaryValues(regulons)}</strong>
+        <span>Location</span>
+        <strong>${renderSummaryValues(locations)}</strong>
       </div>
     </section>
 
@@ -364,7 +364,7 @@ function renderOrganismPage(records) {
 
     ${records.map(({ id, meta }, index) => `
       <section class="organism-section">
-        <h2>Operon ${index + 1}</h2>
+        <h2>Genomic neighborhood ${index + 1}</h2>
         <p class="organism-id">${escapeHtml(id)}</p>
         ${renderOperonHTML(meta)}
       </section>

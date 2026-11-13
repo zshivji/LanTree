@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LanTree</title>
-  <link rel="icon" href="./assets/images/FeMoco-favicon.ico" />
+  <link rel="icon" type="image/x-icon" href="./assets/images/La.ico" />
   <link rel="stylesheet" href="./css/style.css" />
   <link rel="stylesheet" href="./css/site-header.css" />
   <style>
@@ -88,14 +88,14 @@
   gtag('config', 'G-29RF7N32WC');
 </script>
 
-<body>
+<body class="tree-home-page">
   <div id="root">
     <!--load page content first-->
     <header>
       <div class="header">
         <a href="/" class="logo">LanTree <span class="logo-badge">Phylogeny</span></a>
         <nav class="header__navigation">
-          <a translate="no" href="/database">LanTree</a>
+          <a translate="no" href="/database">Database</a>
           <a translate="no" href="/classify">Upload</a>
           <a translate="no" href="/about">About</a>
           <!-- <a translate="no" href="/wiki">Nitrogenase Wiki</a> -->
@@ -108,7 +108,7 @@
   <main class="tree-page">
     <!-- <div style='position: absolute; bottom: 25px; right: 10px;'></div> -->
     <div class="tree-header">
-      <h1>Nitrogenase Phylogeny</h1>
+      <h1>PQQ-dependent dehydrogenase phylogeny</h1>
       <div class="tree-search">
         <div class="tree-search__field">
           <label for="tree-search">Search:</label>
@@ -116,22 +116,27 @@
         </div>
         <div class="tree-search__examples" aria-label="Example searches">
           <span>Examples:</span>
-          <button type="button" data-search-example="Rhizobium">Rhizobium</button>
-          <button type="button" data-search-example="soil">soil</button>
+          <button type="button" data-search-example="Methylobacter">Methylobacter</button>
+          <button type="button" data-search-example="Eukaryota">Eukaryota</button>
+          <span class="tree-search__match-key">
+            <span class="tree-search__match-swatch" aria-hidden="true"></span>
+            Matching nodes
+          </span>
         </div>
       </div>
     </div>
-    <p class="page-description">Nitrogenase phylogeny built from 1000 representative nifH sequences.</p>
+    <p class="page-description">Phylogeny of representative PQQ-dependent dehydrogenase sequences.</p>
     <div class="tree-panel">
-      <div id="tree-container"></div>
+      <div id="tree-container">
+        <div class="tree-loading" role="status" aria-live="polite">Loading phylogenetic tree…</div>
+      </div>
       <aside class="tree-instructions" aria-label="Tree instructions">
         <div class="tree-instructions__title">Instructions</div>
         <p>
-          Mouse over tree labels to learn more about organisms encoding nitrogenase
-          and the genetic neighborhoods around their nif genes. Click on an organism to learn
-          more about its nitrogenase cluster. Use the search bar to find specific organisms
-          or environments. For viewing ease, each node represents multiple organisms. Check 
-          out all diazotrophs in the <a href="/database">LanTree</a> database.
+          Mouse over tree labels to see sequence metadata and the genomic neighborhood
+          around each PQQ-dependent dehydrogenase. Click on a label to open its detailed record.
+          Use the search bar to find accessions, organisms, taxa, or predicted metal dependence.
+          Browse all annotations in the <a href="/database">LanTree</a> database.
         </p>
       </aside>
     </div>
@@ -144,7 +149,7 @@
 
   <footer>
     <div>
-      <p><b>Citation: </b> LanTree: Interactive Nitrogenase Web Database, Shivji (2026) · <a href="https://doi.org/10.5281/zenodo.21909831">doi: 10.5281/zenodo.21909831</a> · Check out our <a href="https://github.com/zshivji/LanTree" target="_blank" rel="noopener">GitHub!</a></p>
+      <p><b>Citation: </b> LanTree: Interactive Nitrogenase Web Database, Shivji (2026) · Check out our <a href="https://github.com/zshivji/LanTree" target="_blank" rel="noopener">GitHub!</a></p>
     </div>
   </footer>
   

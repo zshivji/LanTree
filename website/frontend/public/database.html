@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LanTree</title>
-  <link rel="icon" href="./assets/images/FeMoco-favicon.ico" />
+  <link rel="icon" type="image/x-icon" href="./assets/images/La.ico" />
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <link rel="stylesheet" href="./css/style-database.css" />
   <link rel="stylesheet" href="./css/site-header.css" />
@@ -30,7 +30,7 @@
       <div class="header">
         <a href="/" class="logo">LanTree <span class="logo-badge">DataBase</span></a>
         <nav class="header__navigation">
-          <a translate="no" href="/">Phylo Tree</a>
+          <a translate="no" href="/">Phylogeny</a>
           <a translate="no" href="/classify">Upload</a>
           <a translate="no" href="/about">About</a>
           <!-- <a translate="no" href="/wiki">Nitrogenase Wiki</a> -->
@@ -41,42 +41,6 @@
     <hr class="header-separator">
 
     <div class="database-layout">
-      <aside class="database-aside">
-        <div class="aside-content">
-          <ul class="no-bullet">
-            <li>
-              <div>
-                <div class="aside-header">Popular organisms</div>
-                <ul class="expandable-list no-bullet">
-                  <li><a href="">M.
-                      extorquens</a></li>
-                  <li><a href="">M.
-                      fumariolicum</a></li>
-                  <li><a href="">B.
-                      diazoefficiens</a></li>
-                </ul>
-              </div>
-            </li>
-            <!-- <li>
-              <div>
-                <div class="aside-header">Popular Posts</div>
-                <ul class="expandable-list no-bullet"></ul>
-              </div>
-            </li> -->
-            <!-- <li>
-              <div>
-                <div class="aside-header">Nitrogenase Phylogenies</div>
-                <ul class="expandable-list no-bullet">
-                  <li><a href="">NifH Phylogengy</a></li>
-                  <li><a href="">NifD Phylogengy</a></li>
-                  <li><a href="">NifK Phylogengy</a></li>
-                  <li><a href="">NifDKEN Phylogengy</a></li>
-                </ul>
-              </div>
-            </li> -->
-          </ul>
-        </div>
-      </aside>
       <main class="database-main">
         <div class="page-intro">
           <h1>LanTree<small id="resultCount"> results </small></h1>
@@ -102,14 +66,13 @@
                 Download FASTA
               </button>
               <div class="download-dropdown__menu" role="menu" aria-label="Download FASTA files">
-                <a role="menuitem" href="./fastas/nifH.fasta" download>nifH.fasta</a>
-                <a role="menuitem" href="./fastas/nifD.fasta" download>nifD.fasta</a>
-                <a role="menuitem" href="./fastas/nifK.fasta" download>nifK.fasta</a>
-                <a role="menuitem" href="./fastas/nifN.fasta" download>nifN.fasta</a>
-                <a role="menuitem" href="./fastas/nifE.fasta" download>nifE.fasta</a>
+                <a role="menuitem" href="./results/fastas/pqq.fasta" download>pqq.fasta</a>
               </div>
             </div>
           </div>
+        </div>
+        <div id="databaseLoading" class="database-loading" role="status" aria-live="polite">
+          Loading database records…
         </div>
         <div class="table-viewport" id="tableViewport">
           <table id="LanTree-table" class="data-table">
@@ -173,7 +136,7 @@
 
   <footer>
     <div>
-      <p><b>Citation: </b> LanTree: Interactive Nitrogenase Web Database, Shivji (2026) · <a href="https://doi.org/10.5281/zenodo.21909831">doi: 10.5281/zenodo.21909831</a> · Check out our <a href="https://github.com/zshivji/LanTree" target="_blank" rel="noopener">GitHub!</a></p>
+      <p><b>Citation: </b> LanTree: Interactive Nitrogenase Web Database, Shivji (2026) · Check out our <a href="https://github.com/zshivji/LanTree" target="_blank" rel="noopener">GitHub!</a></p>
     </div>
   </footer>
   </div>

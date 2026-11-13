@@ -202,8 +202,8 @@ hr.header-separator {
 
 .database-layout {
   display: grid;
-  grid-template-columns: minmax(9.6rem, 11.2rem) minmax(0, 1fr);
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
   align-items: stretch;
   flex: 1;
   min-height: 0;
@@ -227,7 +227,7 @@ hr.header-separator {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 0;
+  padding: 1rem;
   flex-wrap: wrap;
 }
 
@@ -369,7 +369,7 @@ section[role="search"] {
   overflow: hidden;
   background-color: rgba(247, 246, 242, 0.88);
   border-radius: 12px;
-  padding-left: 1rem;
+  padding-left: 0;
   padding-top: 0.1rem;
 }
 
@@ -378,11 +378,23 @@ section[role="search"] {
   flex: 0 0 auto;
 }
 
+.database-loading {
+  padding: 0 1rem 1rem;
+  color: #4a4a47;
+  font-weight: 600;
+}
+
+.database-loading.is-error {
+  color: #8b2635;
+}
+
 .table-viewport {
+  box-sizing: border-box;
   flex: 1;
   min-height: 0;
   max-height: none;
   overflow: auto;
+  margin: 0 1rem 1rem;
 }
 
 h1,
@@ -1209,8 +1221,20 @@ td {
 }
 
 .data-row {
-  height: 40px;
+  height: 56px;
   white-space: nowrap;
+}
+
+.data-table th[data-column-name="Organism"],
+.data-table .col-Organism {
+  box-sizing: border-box;
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.25;
 }
 
 /* Override for Environment column */
@@ -1281,6 +1305,7 @@ footer {
   justify-content: space-between;
   align-items: center;
   padding: 0 10px;
+  zoom: 0.8;
 }
 
 /* footer a {
