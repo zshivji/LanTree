@@ -12,3 +12,6 @@ website/frontend/blob-report/
 # runner
 runner/.env
 runner/runner.log
+
+# user uploads
+uploadsc/
